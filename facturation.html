@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>ABDERCAR - Facturation</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        .facture-preview {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            color: #000;
+        }
+        .facture-preview table { width: 100%; border-collapse: collapse; margin: 15px 0; color: #000; }
+        .facture-preview th, .facture-preview td { border: 1px solid #dee2e6; padding: 8px; text-align: left; color: #000; }
+        .facture-preview th { background: #e9ecef; color: #000; }
+        .company-header-mini { background: linear-gradient(135deg, #1a3a6c, #2c5282); color: white; padding: 15px; text-align: center; border-radius: 12px 12px 0 0; }
+        .stamp-placeholder { border: 1px dashed #1a3a6c; padding: 10px; text-align: center; font-size: 0.8rem; color: #1a3a6c; background: #f8f9fa; margin-top: 20px; }
+        .legal-mentions { font-size: 0.7rem; text-align: center; margin-top: 20px; padding-top: 10px; border-top: 1px solid #dee2e6; color: #6c757d; }
+        @media (max-width: 768px) { .flex-actions { flex-direction: column; } .facture-preview { overflow-x: auto; } }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="main-header">
+        <div class="logo"><h1><i class="fas fa-car"></i> ABDERCAR</h1><p>Gestion de flotte</p></div>
+        <div class="user-actions"><span id="userEmail"></span><button id="logoutBtn" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Déconnexion</button></div>
+    </div>
+    <div class="main-nav">
+        <a href="dashboard.html" class="nav-link">📊 Dashboard</a>
+        <a href="vehicules.html" class="nav-link">🚗 Véhicules</a>
+        <a href="contrats.html" class="nav-link">📝 Contrats</a>
+        <a href="depenses.html" class="nav-link">💰 Dépenses</a>
+        <a href="credits.html" class="nav-link">🏦 Crédits</a>
+        <a href="investisseurs.html" class="nav-link">👥 Investisseurs</a>
+        <a href="ia.html" class="nav-link">🤖 IA</a>
+        <a href="facturation.html" class="nav-link active">📄 Facturation</a>
+        <a href="parc-auto.html" class="nav-link">📋 Parc Auto</a>
+    </div>
+    <div class="content">
+        <h2>📄 Émettre une facture</h2>
+        <div class="card">
+            <div class="form-group"><label>Choisir un contrat</label><select id="contratSelect" class="form-control"><option>-- Chargement --</option></select></div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button id="chargerContratBtn" class="btn btn-primary"><i class="fas fa-sync-alt"></i> Charger facture</button>
+                <button id="genererFactureBtn" class="btn btn-success"><i class="fas fa-file-pdf"></i> Générer PDF</button>
+                <button id="stampUploadBtn" class="btn btn-secondary"><i class="fas fa-stamp"></i> Importer cachet</button>
+                <input type="file" id="stampFile" accept="image/*" style="display:none">
+            </div>
+        </div>
+        <div class="card">
+            <h3>Aperçu de la facture</h3>
+            <div id="facturePreview" class="facture-preview">Sélectionnez un contrat.</div>
+        </div>
+        <div id="syncStatus" class="status">✅ Prêt</div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, getDocs, doc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDE3BJsD1mp-vz9TEJSo4WtFcHe8sw6jJI",
+        authDomain: "gslv-c3875.firebaseapp.com",
+        projectId: "gslv-c3875",
+        storageBucket: "gslv-c3875.firebasestorage.app",
+        messagingSenderId: "971384785471",
+        appId: "1:971384785471:web:c881bc4db0595720ae068a"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    let currentUser = null;
+    let contratsList = [];
+    let currentFactureData = null;
+    let currentStamp = localStorage.getItem('abdercar_stamp_facture') || null;
+
+    const contratSelect = document.getElementById('contratSelect');
+    const previewDiv = document.getElementById('facturePreview');
+    const syncStatus = document.getElementById('syncStatus');
+
+    function showStatus(msg, isError = false) {
+        syncStatus.textContent = msg;
+        syncStatus.className = `status ${isError ? 'status-error' : 'status-success'}`;
+        setTimeout(() => { if (syncStatus.textContent === msg) { syncStatus.textContent = "✅ Prêt"; syncStatus.className = "status"; } }, 3000);
+    }
+
+    // Conversion d'un nombre en lettres (français)
+    function nombreEnLettres(n) {
+        if (n === 0) return "zéro";
+        const unite = ["", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf", "dix", "onze", "douze", "treize", "quatorze", "quinze", "seize", "dix-sept", "dix-huit", "dix-neuf"];
+        const dizaine = ["", "dix", "vingt", "trente", "quarante", "cinquante", "soixante", "soixante-dix", "quatre-vingt", "quatre-vingt-dix"];
+        function convert999(n) {
+            if (n === 0) return "";
+            let cent = Math.floor(n / 100);
+            let reste = n % 100;
+            let result = "";
+            if (cent > 0) {
+                result += (cent === 1 ? "cent" : unite[cent] + " cents");
+                if (reste > 0) result += "-";
+            }
+            if (reste > 0) {
+                if (reste < 20) result += unite[reste];
+                else {
+                    let d = Math.floor(reste / 10);
+                    let u = reste % 10;
+                    if (d === 7 || d === 9) {
+                        result += dizaine[d-1] + "-" + unite[10 + u];
+                    } else {
+                        result += dizaine[d];
+                        if (u === 1 && d !== 8) result += " et un";
+                        else if (u > 0) result += "-" + unite[u];
+                    }
+                }
+            }
+            return result;
+        }
+        let result = "";
+        let milliards = Math.floor(n / 1_000_000_000);
+        let millions = Math.floor((n % 1_000_000_000) / 1_000_000);
+        let milliers = Math.floor((n % 1_000_000) / 1000);
+        let reste = n % 1000;
+        if (milliards > 0) {
+            result += convert999(milliards) + " milliard" + (milliards > 1 ? "s" : "");
+            if (millions > 0 || milliers > 0 || reste > 0) result += " ";
+        }
+        if (millions > 0) {
+            result += convert999(millions) + " million" + (millions > 1 ? "s" : "");
+            if (milliers > 0 || reste > 0) result += " ";
+        }
+        if (milliers > 0) {
+            let milliersStr = convert999(milliers);
+            if (milliers === 1) result += "mille";
+            else result += milliersStr + " mille";
+            if (reste > 0) result += " ";
+        }
+        if (reste > 0) result += convert999(reste);
+        return result.trim();
+    }
+
+    async function loadContrats() {
+        if (!currentUser) return;
+        const q = query(collection(db, "contrats"), where("userId", "==", currentUser.uid));
+        const snapshot = await getDocs(q);
+        contratsList = [];
+        contratSelect.innerHTML = '<option value="">-- Sélectionnez un contrat --</option>';
+        for (const docSnap of snapshot.docs) {
+            const contrat = { id: docSnap.id, ...docSnap.data() };
+            const vehDoc = await getDoc(doc(db, "vehicules", contrat.vehiculeId));
+            let vehiculeNom = "Véhicule inconnu";
+            if (vehDoc.exists()) vehiculeNom = `${vehDoc.data().marque} ${vehDoc.data().modele}`;
+            let clientLabel = "";
+            if (contrat.clientInfo?.type === 'particulier') clientLabel = `${contrat.clientInfo.nom}`;
+            else if (contrat.clientInfo?.type === 'societe') clientLabel = `${contrat.clientInfo.raisonSociale}`;
+            else clientLabel = "Client inconnu";
+            contratsList.push({ ...contrat, vehiculeNom, clientLabel });
+            const option = document.createElement('option');
+            option.value = contrat.id;
+            option.textContent = `${clientLabel} - ${vehiculeNom} (${new Date(contrat.debut?.seconds*1000).toLocaleDateString()})`;
+            contratSelect.appendChild(option);
+        }
+    }
+
+    async function getContratDetails(contratId) {
+        const contratDoc = await getDoc(doc(db, "contrats", contratId));
+        if (!contratDoc.exists()) return null;
+        const contrat = { id: contratDoc.id, ...contratDoc.data() };
+        const vehDoc = await getDoc(doc(db, "vehicules", contrat.vehiculeId));
+        const vehicule = vehDoc.exists() ? vehDoc.data() : { marque: '', modele: '', immatriculation: '' };
+        return { contrat, vehicule, clientInfo: contrat.clientInfo };
+    }
+
+    function renderFacturePreview(details) {
+        const { contrat, vehicule, clientInfo } = details;
+        const debut = contrat.debut?.toDate ? contrat.debut.toDate() : new Date(contrat.debut);
+        const fin = contrat.fin?.toDate ? contrat.fin.toDate() : new Date(contrat.fin);
+        const nbJours = Math.max(1, Math.ceil((fin - debut) / (1000 * 60 * 60 * 24)));
+        const prixJournalier = contrat.montant / nbJours;
+        const totalHT = contrat.montant;
+        const tva = totalHT * 0.2;
+        const totalTTC = totalHT + tva;
+        const restant = totalTTC - (contrat.avance || 0);
+        const montantLettres = nombreEnLettres(Math.floor(totalTTC)) + " dirhams" + (Math.floor(totalTTC) !== totalTTC ? " et " + ((totalTTC % 1)*100).toFixed(0) + " centimes" : "");
+        
+        let clientHtml = '';
+        if (clientInfo?.type === 'particulier') {
+            clientHtml = `<strong>🧑 Client (particulier)</strong><br>${clientInfo.nom}<br>CIN: ${clientInfo.cin}<br>Tél: ${clientInfo.telephone || ''}<br>Email: ${clientInfo.email || ''}<br>Adresse: ${clientInfo.adresse || ''}`;
+        } else if (clientInfo?.type === 'societe') {
+            clientHtml = `<strong>🏢 Client (société)</strong><br>${clientInfo.raisonSociale}<br>ICE: ${clientInfo.ice}<br>IF: ${clientInfo.if}<br>RC: ${clientInfo.rc}<br>Adresse: ${clientInfo.adresse}<br>Email: ${clientInfo.email}<br>Tél: ${clientInfo.telephone}<br>Contact: ${clientInfo.contact || ''}`;
+        } else {
+            clientHtml = `<strong>⚠️ Client inconnu</strong>`;
+        }
+        
+        previewDiv.innerHTML = `
+            <div class="company-header-mini">
+                <div style="font-weight:bold;">ABDERCAR - LOCATION DE VOITURES</div>
+                <div style="font-size:0.8rem;">Siège : N°291 GROUPE AL AHD HAY NAHDA I RABAT</div>
+                <div style="font-size:0.8rem;">GSM : 0619811313 / 0663007372 - EMAIL : ABDERCAR.RENT@GMAIL.COM</div>
+                <div style="font-size:0.7rem;">RC : 111305 - IF : 3374473 - CNSS : 4496479 - PATENTE : 25909585</div>
+            </div>
+            <div style="padding:15px;">
+                <div style="display:flex; justify-content:space-between;">
+                    <div><strong>Facture N°</strong> FACT-${contrat.id.slice(-8)}</div>
+                    <div><strong>Date :</strong> ${new Date().toLocaleDateString('fr-FR')}</div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin:15px 0;">
+                    <div>${clientHtml}</div>
+                    <div><strong>🚗 Véhicule</strong><br>${vehicule.marque} ${vehicule.modele}<br>${vehicule.immatriculation}<br>Période: ${debut.toLocaleDateString()} → ${fin.toLocaleDateString()}</div>
+                </div>
+                <table>
+                    <thead><tr><th>Désignation</th><th>Quantité</th><th>Prix unitaire (DH)</th><th>Total HT (DH)</th></tr></thead>
+                    <tbody>
+                        <tr><td>Location ${vehicule.marque} ${vehicule.modele}</td><td>${nbJours} jours</td><td>${prixJournalier.toFixed(2)}</td><td>${totalHT.toFixed(2)}</td></tr>
+                        <tr><td colspan="3" style="text-align:right;"><strong>Total HT</strong></td><td>${totalHT.toFixed(2)}</td></tr>
+                        <tr><td colspan="3" style="text-align:right;">TVA 20%</td><td>${tva.toFixed(2)}</td></tr>
+                        <tr style="background:#e9ecef;"><td colspan="3" style="text-align:right;"><strong>Total TTC</strong></td><td><strong>${totalTTC.toFixed(2)} DH</strong></td></tr>
+                        <tr><td colspan="3" style="text-align:right;">Avance versée</td><td>${(contrat.avance || 0).toFixed(2)} DH</td></tr>
+                        <tr style="background:#f1f1f1;"><td colspan="3" style="text-align:right;"><strong>Reste à payer</strong></td><td><strong>${restant.toFixed(2)} DH</strong></td></tr>
+                    </tbody>
+                </table>
+                <div style="margin-top: 15px; font-style: italic; text-align: center; background: #f9f9f9; padding: 8px; border-radius: 8px;">
+                    Arrêtée la présente facture à la somme de <strong>${montantLettres}</strong>
+                </div>
+                <div class="stamp-placeholder" id="stampAreaPreview">
+                    ${currentStamp ? `<img src="${currentStamp}" style="max-width:120px; max-height:60px;">` : 'CACHET ET SIGNATURE'}
+                </div>
+                <div class="legal-mentions">RC : 111305 - IF : 3374473 - CNSS : 4496479 - PATENTE : 25909585</div>
+            </div>
+        `;
+        currentFactureData = {
+            numero: `FACT-${contrat.id.slice(-8)}`,
+            date: new Date(),
+            clientInfo, vehicule, debut, fin, nbJours, prixJournalier: prixJournalier.toFixed(2),
+            totalHT: totalHT.toFixed(2), tva: tva.toFixed(2), totalTTC: totalTTC.toFixed(2),
+            avance: contrat.avance || 0, restant: restant.toFixed(2), montantLettres
+        };
+    }
+
+    function generatePDF() {
+        if (!currentFactureData) { showStatus("Aucune facture chargée", true); return; }
+        const data = currentFactureData;
+        const doc = new jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        doc.setFontSize(12); doc.setTextColor(26,58,108); doc.text("ABDERCAR - LOCATION DE VOITURES", 105, 15, { align: 'center' });
+        doc.setFontSize(9); doc.setTextColor(80,80,80);
+        doc.text("Siège : N°291 GROUPE AL AHD HAY NAHDA I RABAT", 105, 22, { align: 'center' });
+        doc.text("GSM : 0619811313 / 0663007372 - EMAIL : ABDERCAR.RENT@GMAIL.COM", 105, 29, { align: 'center' });
+        doc.setFontSize(8);
+        doc.text("RC : 111305 - IF : 3374473 - CNSS : 4496479 - PATENTE : 25909585", 105, 36, { align: 'center' });
+        doc.setFontSize(10); doc.text(`Facture N°: ${data.numero}`, 20, 50); doc.text(`Date: ${data.date.toLocaleDateString('fr-FR')}`, 150, 50);
+        let y = 60; doc.setFontSize(9);
+        if (data.clientInfo?.type === 'particulier') {
+            doc.text("Client (particulier) :", 20, y); y+=6;
+            doc.text(`Nom: ${data.clientInfo.nom}`, 20, y); y+=5;
+            doc.text(`CIN: ${data.clientInfo.cin}`, 20, y); y+=5;
+            if (data.clientInfo.telephone) doc.text(`Tél: ${data.clientInfo.telephone}`, 20, y); y+=5;
+        } else if (data.clientInfo?.type === 'societe') {
+            doc.text("Client (société) :", 20, y); y+=6;
+            doc.text(`Raison sociale: ${data.clientInfo.raisonSociale}`, 20, y); y+=5;
+            doc.text(`ICE: ${data.clientInfo.ice} - IF: ${data.clientInfo.if} - RC: ${data.clientInfo.rc}`, 20, y); y+=5;
+            doc.text(`Adresse: ${data.clientInfo.adresse}`, 20, y); y+=5;
+        }
+        doc.text(`Véhicule: ${data.vehicule.marque} ${data.vehicule.modele} - Immat: ${data.vehicule.immatriculation}`, 20, y+5);
+        doc.text(`Période: ${data.debut.toLocaleDateString()} → ${data.fin.toLocaleDateString()}`, 20, y+10);
+        doc.autoTable({
+            startY: y+20,
+            head: [['Désignation', 'Quantité', 'Prix unitaire (DH)', 'Total HT (DH)']],
+            body: [[`Location ${data.vehicule.marque} ${data.vehicule.modele}`, `${data.nbJours} jours`, data.prixJournalier, data.totalHT]],
+            foot: [
+                [{ content: 'Total HT', colSpan: 3, styles: { halign: 'right' } }, { content: `${data.totalHT} DH` }],
+                [{ content: 'TVA 20%', colSpan: 3, styles: { halign: 'right' } }, { content: `${data.tva} DH` }],
+                [{ content: 'Total TTC', colSpan: 3, styles: { halign: 'right', fontStyle: 'bold' } }, { content: `${data.totalTTC} DH`, styles: { fontStyle: 'bold' } }],
+                [{ content: 'Avance', colSpan: 3, styles: { halign: 'right' } }, { content: `${data.avance} DH` }],
+                [{ content: 'Reste à payer', colSpan: 3, styles: { halign: 'right', fontStyle: 'bold' } }, { content: `${data.restant} DH`, styles: { fontStyle: 'bold' } }]
+            ],
+            theme: 'striped', headStyles: { fillColor: [26,58,108], textColor: 255 }, footStyles: { fillColor: [240,240,240] }, margin: { left: 20, right: 20 }
+        });
+        let finalY = doc.lastAutoTable.finalY + 5;
+        doc.setFontSize(9); doc.text("Arrêtée la présente facture à la somme de :", 20, finalY);
+        doc.setFontSize(9); doc.text(data.montantLettres, 20, finalY+6);
+        finalY += 15;
+        if (currentStamp) { try { doc.addImage(currentStamp, 'PNG', 80, finalY, 50, 25); finalY += 30; } catch(e){} }
+        else { doc.setDrawColor(26,58,108); doc.rect(70, finalY, 70, 20); doc.text("CACHET ET SIGNATURE", 105, finalY+12, { align: 'center' }); finalY += 30; }
+        doc.setFontSize(7); doc.text("RC : 111305 - IF : 3374473 - CNSS : 4496479 - PATENTE : 25909585", 105, finalY+10, { align: 'center' });
+        doc.save(`facture_${data.numero}.pdf`);
+        showStatus("PDF généré");
+    }
+
+    document.getElementById('chargerContratBtn').onclick = async () => {
+        const contratId = contratSelect.value;
+        if (!contratId) { showStatus("Sélectionnez un contrat", true); return; }
+        const details = await getContratDetails(contratId);
+        if (!details) { showStatus("Erreur chargement", true); return; }
+        renderFacturePreview(details);
+        showStatus("Facture chargée");
+    };
+    document.getElementById('genererFactureBtn').onclick = generatePDF;
+    const stampInput = document.getElementById('stampFile');
+    document.getElementById('stampUploadBtn').onclick = () => stampInput.click();
+    stampInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file && file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (ev) => { currentStamp = ev.target.result; localStorage.setItem('abdercar_stamp_facture', currentStamp); if (currentFactureData) renderFacturePreview(currentFactureData); showStatus("Cachet importé"); };
+            reader.readAsDataURL(file);
+        }
+    };
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) { window.location.href = "index.html"; return; }
+        currentUser = user; document.getElementById('userEmail').innerText = user.email; await loadContrats();
+    });
+    document.getElementById('logoutBtn').onclick = () => signOut(auth);
+</script>
+</body>
+    </html>

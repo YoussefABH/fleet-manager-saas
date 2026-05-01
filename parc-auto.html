@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>ABDERCAR - Parc Automobile</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        /* Styles additionnels pour cette page */
+        .company-header {
+            background: linear-gradient(135deg, #1a3a6c, #2c5282);
+            color: white;
+            padding: 20px 15px;
+            text-align: center;
+            border-radius: 15px 15px 0 0;
+        }
+        .company-info {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .company-info div {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 12px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+        }
+        .document-title {
+            text-align: center;
+            margin: 15px 0;
+            color: #1a3a6c;
+        }
+        .stamp-section {
+            margin: 20px 0;
+            text-align: center;
+        }
+        .stamp {
+            border: 2px dashed #1a3a6c;
+            display: inline-block;
+            padding: 15px 30px;
+            border-radius: 15px;
+            background: #f8f9fa;
+            position: relative;
+            min-width: 220px;
+        }
+        .stamp::before {
+            content: "CACHET ET SIGNATURE";
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 0 8px;
+            font-weight: bold;
+            font-size: 0.8rem;
+            color: #1a3a6c;
+        }
+        .stamp img {
+            max-width: 150px;
+            max-height: 80px;
+            display: none;
+        }
+        .add-row-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f7ff;
+            border-radius: 15px;
+        }
+        .main-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+        .main-table th, .main-table td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+        .main-table th {
+            background: #1a3a6c;
+            color: white;
+        }
+        .action-cell {
+            white-space: nowrap;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        .status-success { background: #d4edda; color: #155724; }
+        .status-error { background: #f8d7da; color: #721c24; }
+        @media (max-width: 768px) {
+            .company-info div { font-size: 0.7rem; }
+            .add-row-form { grid-template-columns: 1fr; }
+            .btn-sm { width: auto; }
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <!-- En-tête principal -->
+    <div class="main-header">
+        <div class="logo">
+            <h1><i class="fas fa-car"></i> ABDERCAR</h1>
+            <p>Gestion de flotte</p>
+        </div>
+        <div class="user-actions">
+            <span id="userEmail"></span>
+            <button id="logoutBtn" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Déconnexion</button>
+        </div>
+    </div>
+
+    <!-- Menu de navigation -->
+    <div class="main-nav">
+        <a href="dashboard.html" class="nav-link">📊 Dashboard</a>
+        <a href="vehicules.html" class="nav-link">🚗 Véhicules</a>
+        <a href="contrats.html" class="nav-link">📝 Contrats</a>
+        <a href="depenses.html" class="nav-link">💰 Dépenses</a>
+        <a href="credits.html" class="nav-link">🏦 Crédits</a>
+        <a href="investisseurs.html" class="nav-link">👥 Investisseurs</a>
+        <a href="ia.html" class="nav-link">🤖 IA</a>
+        <a href="facturation.html" class="nav-link">📄 Facturation</a>
+        <a href="parc-auto.html" class="nav-link active">📋 Parc Auto</a>
+    </div>
+
+    <div class="content">
+        <!-- Zone d'affichage -->
+        <div id="displayContent">
+            <div class="company-header">
+                <div style="font-size:1.8rem; font-weight:bold;">ABDERCAR</div>
+                <div style="font-size:1.2rem;">LOCATION DE VOITURES</div>
+                <div class="company-info">
+                    <div><i class="fas fa-map-marker-alt"></i> N°291 Groupe Al Ahd Hay Nahda 1 Rabat</div>
+                    <div><i class="fas fa-phone-alt"></i> GSM: 0619.81.13.13 - 0663.00.73.72</div>
+                    <div><i class="fas fa-envelope"></i> contact@abdercar.ma</div>
+                </div>
+            </div>
+            <div class="document-title">
+                <h2>Fiche de Parc Automobile</h2>
+                <div>Date: <span id="currentDate"></span></div>
+            </div>
+
+            <!-- Tableau des véhicules -->
+            <div class="card" style="margin-bottom:20px;">
+                <h2 class="card-title">Inventaire du parc automobile</h2>
+                <div class="table-container">
+                    <table class="main-table" id="vehiclesTable">
+                        <thead>
+                            <tr>
+                                <th>Désignation (Marque + Modèle)</th>
+                                <th>Immatriculation</th>
+                                <th>Année</th>
+                                <th>Carburant</th>
+                                <th>Prix Achat (DH)</th>
+                                <th class="action-cell">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="carTableBody">
+                            <tr><td colspan="6">Chargement...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Cachet -->
+            <div class="stamp-section">
+                <div class="stamp">
+                    <img id="stampPreview" alt="Cachet">
+                    <div id="stampText">CACHET ET SIGNATURE</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Boutons d'action (non imprimés) -->
+        <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin:20px 0;">
+            <button id="exportJsonBtn" class="btn btn-primary btn-sm"><i class="fas fa-file-export"></i> Exporter JSON</button>
+            <button id="resetBtn" class="btn btn-warning btn-sm"><i class="fas fa-sync-alt"></i> Réinitialiser</button>
+            <button id="generatePdfBtn" class="btn btn-success btn-sm"><i class="fas fa-file-pdf"></i> Générer PDF</button>
+        </div>
+
+        <!-- Formulaire d'ajout -->
+        <div class="add-row-form">
+            <input type="text" id="newMarque" placeholder="Marque (ex: Renault)">
+            <input type="text" id="newModele" placeholder="Modèle (ex: Clio)">
+            <input type="text" id="newImmat" placeholder="Immatriculation">
+            <input type="text" id="newAnnee" placeholder="Année (ex: 2023)">
+            <select id="newCarburant">
+                <option>Diesel</option>
+                <option>Essence</option>
+                <option>Hybride</option>
+                <option>Électrique</option>
+            </select>
+            <button id="addVehicleBtn" class="btn btn-primary">Ajouter véhicule</button>
+        </div>
+
+        <!-- Import / suppression cachet -->
+        <div style="margin:20px 0; text-align:center;">
+            <button class="btn btn-primary btn-sm" onclick="document.getElementById('stampUpload').click()"><i class="fas fa-upload"></i> Importer Cachet</button>
+            <button class="btn btn-danger btn-sm" onclick="removeStamp()"><i class="fas fa-trash"></i> Supprimer Cachet</button>
+            <input type="file" id="stampUpload" accept="image/*" style="display:none">
+        </div>
+
+        <!-- Synchronisation Firestore -->
+        <div style="background:#e6f0ff; padding:15px; border-radius:12px;">
+            <h3><i class="fas fa-cloud-upload-alt"></i> Synchronisation Firestore</h3>
+            <p>Dernière synchronisation : <span id="lastSync">--</span></p>
+            <div id="syncStatus" class="status">✅ Prêt</div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDE3BJsD1mp-vz9TEJSo4WtFcHe8sw6jJI",
+        authDomain: "gslv-c3875.firebaseapp.com",
+        projectId: "gslv-c3875",
+        storageBucket: "gslv-c3875.firebasestorage.app",
+        messagingSenderId: "971384785471",
+        appId: "1:971384785471:web:c881bc4db0595720ae068a"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let currentUser = null;
+    let currentVehicles = [];
+    let editingId = null;
+
+    const tbody = document.getElementById('carTableBody');
+    const syncStatus = document.getElementById('syncStatus');
+    const lastSyncSpan = document.getElementById('lastSync');
+
+    function showStatus(msg, isError = false) {
+        syncStatus.textContent = msg;
+        syncStatus.className = `status ${isError ? 'status-error' : 'status-success'}`;
+        setTimeout(() => {
+            if (syncStatus.textContent === msg) {
+                syncStatus.textContent = "✅ Prêt";
+                syncStatus.className = "status";
+            }
+        }, 3000);
+    }
+
+    async function loadVehicles() {
+        if (!currentUser) return;
+        tbody.innerHTML = '<tr><td colspan="6">Chargement...</td></tr>';
+        try {
+            const q = query(collection(db, "vehicules"), where("userId", "==", currentUser.uid));
+            const snapshot = await getDocs(q);
+            currentVehicles = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderTable();
+            lastSyncSpan.innerText = new Date().toLocaleString();
+            showStatus("Synchronisé");
+        } catch (error) {
+            showStatus("Erreur: " + error.message, true);
+            tbody.innerHTML = '<tr><td colspan="6">Erreur de chargement</td></tr>';
+        }
+    }
+
+    function renderTable() {
+        if (!currentVehicles.length) {
+            tbody.innerHTML = '<tr><td colspan="6">Aucun véhicule. Ajoutez-en un.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = '';
+        currentVehicles.forEach(vehicle => {
+            const row = document.createElement('tr');
+            row.dataset.id = vehicle.id;
+            const designation = `${vehicle.marque || ''} ${vehicle.modele || ''}`.trim();
+            row.innerHTML = `
+                <td class="desCell">${escapeHtml(designation)}</td>
+                <td class="matCell">${escapeHtml(vehicle.immatriculation || '')}</td>
+                <td class="anneeCell">${escapeHtml(vehicle.dateCirculation || '')}</td>
+                <td class="fuelCell">${escapeHtml(vehicle.carburant || 'Diesel')}</td>
+                <td class="prixCell">${(vehicle.prixAchat || 0).toLocaleString()} DH</td>
+                <td class="action-cell">
+                    <button class="edit-btn btn btn-secondary btn-sm" data-id="${vehicle.id}"><i class="fas fa-edit"></i></button>
+                    <button class="delete-btn btn btn-danger btn-sm" data-id="${vehicle.id}"><i class="fas fa-trash"></i></button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+        document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', () => editRow(btn.dataset.id)));
+        document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', () => deleteRow(btn.dataset.id)));
+    }
+
+    function editRow(id) {
+        if (editingId) cancelEdit();
+        const vehicle = currentVehicles.find(v => v.id === id);
+        if (!vehicle) return;
+        editingId = id;
+        const row = document.querySelector(`tr[data-id="${id}"]`);
+        const cells = row.querySelectorAll('td:not(:last-child)');
+        cells[0].innerHTML = `<input class="edit-input form-control" value="${escapeHtml(vehicle.marque || '')}" placeholder="Marque"><br><input class="edit-input form-control mt-1" value="${escapeHtml(vehicle.modele || '')}" placeholder="Modèle">`;
+        cells[1].innerHTML = `<input class="edit-input form-control" value="${escapeHtml(vehicle.immatriculation || '')}">`;
+        cells[2].innerHTML = `<input class="edit-input form-control" value="${escapeHtml(vehicle.dateCirculation || '')}" placeholder="Année">`;
+        cells[3].innerHTML = `<select class="edit-input form-control">
+            <option ${vehicle.carburant === 'Diesel' ? 'selected' : ''}>Diesel</option>
+            <option ${vehicle.carburant === 'Essence' ? 'selected' : ''}>Essence</option>
+            <option ${vehicle.carburant === 'Hybride' ? 'selected' : ''}>Hybride</option>
+            <option ${vehicle.carburant === 'Électrique' ? 'selected' : ''}>Électrique</option>
+        </select>`;
+        cells[4].innerHTML = `<input class="edit-input form-control" type="number" value="${vehicle.prixAchat || 0}">`;
+        const actionCell = row.querySelector('.action-cell');
+        actionCell.innerHTML = `<button class="save-btn btn btn-success btn-sm"><i class="fas fa-save"></i></button><button class="cancel-btn btn btn-secondary btn-sm"><i class="fas fa-times"></i></button>`;
+        actionCell.querySelector('.save-btn').onclick = () => saveRow(id);
+        actionCell.querySelector('.cancel-btn').onclick = () => cancelEdit();
+    }
+
+    async function saveRow(id) {
+        const row = document.querySelector(`tr[data-id="${id}"]`);
+        const inputs = row.querySelectorAll('.edit-input');
+        const marque = inputs[0].value.trim();
+        const modele = inputs[1].value.trim();
+        const immatriculation = inputs[2].value.trim();
+        const annee = inputs[3].value.trim();
+        const carburant = inputs[4].value;
+        const prixAchat = Number(inputs[5].value) || 0;
+        if (!marque || !modele || !immatriculation) {
+            showStatus("Marque, modèle et immatriculation requis", true);
+            return;
+        }
+        try {
+            const ref = doc(db, "vehicules", id);
+            await updateDoc(ref, { marque, modele, immatriculation, dateCirculation: annee, carburant, prixAchat, updatedAt: new Date() });
+            const idx = currentVehicles.findIndex(v => v.id === id);
+            if (idx !== -1) currentVehicles[idx] = { ...currentVehicles[idx], marque, modele, immatriculation, dateCirculation: annee, carburant, prixAchat };
+            renderTable();
+            editingId = null;
+            showStatus("Véhicule modifié");
+        } catch (error) {
+            showStatus("Erreur modification", true);
+        }
+    }
+
+    function cancelEdit() {
+        editingId = null;
+        renderTable();
+    }
+
+    async function deleteRow(id) {
+        if (confirm("Supprimer définitivement ce véhicule ?")) {
+            try {
+                await deleteDoc(doc(db, "vehicules", id));
+                currentVehicles = currentVehicles.filter(v => v.id !== id);
+                renderTable();
+                showStatus("Véhicule supprimé");
+            } catch (error) {
+                showStatus("Erreur suppression", true);
+            }
+        }
+    }
+
+    async function addVehicle() {
+        const marque = document.getElementById('newMarque').value.trim();
+        const modele = document.getElementById('newModele').value.trim();
+        const immat = document.getElementById('newImmat').value.trim();
+        const annee = document.getElementById('newAnnee').value.trim();
+        const carburant = document.getElementById('newCarburant').value;
+        if (!marque || !modele || !immat) {
+            showStatus("Marque, modèle et immatriculation requis", true);
+            return;
+        }
+        try {
+            const docRef = await addDoc(collection(db, "vehicules"), {
+                marque, modele, immatriculation: immat, dateCirculation: annee, carburant, prixAchat: 0,
+                userId: currentUser.uid, createdAt: new Date(), updatedAt: new Date()
+            });
+            currentVehicles.push({ id: docRef.id, marque, modele, immatriculation: immat, dateCirculation: annee, carburant, prixAchat: 0 });
+            renderTable();
+            document.getElementById('newMarque').value = '';
+            document.getElementById('newModele').value = '';
+            document.getElementById('newImmat').value = '';
+            document.getElementById('newAnnee').value = '';
+            showStatus("Véhicule ajouté");
+        } catch (error) {
+            showStatus("Erreur ajout", true);
+        }
+    }
+
+    async function resetToDefault() {
+        if (!confirm("Réinitialiser la flotte avec les véhicules par défaut ?")) return;
+        const q = query(collection(db, "vehicules"), where("userId", "==", currentUser.uid));
+        const snapshot = await getDocs(q);
+        for (const docSnap of snapshot.docs) await deleteDoc(docSnap.ref);
+        const defaultCars = [
+            { marque: "Citroën", modele: "C-Élysé", immat: "77301-E-1", annee: "2022", carburant: "Diesel", prix: 140000 },
+            { marque: "Citroën", modele: "C-Élysé", immat: "77302-E-1", annee: "2022", carburant: "Diesel", prix: 140000 },
+            { marque: "Peugeot", modele: "208", immat: "11439-T-1", annee: "2024", carburant: "Diesel", prix: 180000 },
+            { marque: "Opel", modele: "Corsa", immat: "5954-T-1", annee: "2024", carburant: "Diesel", prix: 160000 },
+            { marque: "Dacia", modele: "Logan", immat: "16934-T-1", annee: "2024", carburant: "Diesel", prix: 120000 },
+            { marque: "Renault", modele: "Clio 5", immat: "16960-T-1", annee: "2024", carburant: "Diesel", prix: 150000 },
+            { marque: "Hyundai", modele: "Tucson", immat: "18830-T-1", annee: "2024", carburant: "Diesel", prix: 360000 },
+            { marque: "Hyundai", modele: "Tucson", immat: "18831-T-1", annee: "2024", carburant: "Diesel", prix: 360000 },
+            { marque: "Dacia", modele: "Stepway", immat: "25013-T-1", annee: "2024", carburant: "Diesel", prix: 130000 },
+            { marque: "Opel", modele: "Corsa", immat: "23707-T-1", annee: "2024", carburant: "Diesel", prix: 160000 },
+            { marque: "Fiat", modele: "500", immat: "28819-T-1", annee: "2024", carburant: "Essence", prix: 140000 },
+            { marque: "Fiat", modele: "500", immat: "26550-T-1", annee: "2024", carburant: "Essence", prix: 140000 },
+            { marque: "Renault", modele: "Express", immat: "39414-T-1", annee: "2025", carburant: "Diesel", prix: 190000 }
+        ];
+        for (const car of defaultCars) {
+            await addDoc(collection(db, "vehicules"), {
+                marque: car.marque, modele: car.modele, immatriculation: car.immat,
+                dateCirculation: car.annee, carburant: car.carburant, prixAchat: car.prix,
+                userId: currentUser.uid, createdAt: new Date(), updatedAt: new Date()
+            });
+        }
+        await loadVehicles();
+        showStatus("Flotte réinitialisée");
+    }
+
+    async function exportToJSON() {
+        const data = JSON.stringify(currentVehicles.map(v => ({
+            marque: v.marque, modele: v.modele, immatriculation: v.immatriculation,
+            annee: v.dateCirculation, carburant: v.carburant, prixAchat: v.prixAchat
+        })), null, 2);
+        const blob = new Blob([data], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `parc_auto_${new Date().toISOString().slice(0,19)}.json`;
+        a.click();
+        URL.revokeObjectURL(blob);
+        showStatus("Export JSON réussi");
+    }
+
+    function generatePDF() {
+        const tableData = currentVehicles.map(v => [
+            `${v.marque || ''} ${v.modele || ''}`.trim(),
+            v.immatriculation || '',
+            v.dateCirculation || '',
+            v.carburant || 'Diesel',
+            (v.prixAchat || 0).toLocaleString() + ' DH'
+        ]);
+        const stampImg = document.getElementById('stampPreview').src;
+        const hasStamp = stampImg && stampImg !== '';
+        const doc = new jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+        // En-tête
+        doc.setFontSize(18);
+        doc.setTextColor(26, 58, 108);
+        doc.text("ABDERCAR", 105, 15, { align: 'center' });
+        doc.setFontSize(12);
+        doc.setTextColor(44, 82, 130);
+        doc.text("LOCATION DE VOITURES", 105, 22, { align: 'center' });
+        doc.setFontSize(9);
+        doc.setTextColor(80, 80, 80);
+        doc.text("N°291 Groupe Al Ahd Hay Nahda 1 Rabat", 105, 30, { align: 'center' });
+        doc.text("GSM: 0619.81.13.13 - 0663.00.73.72", 105, 36, { align: 'center' });
+        doc.text("contact@abdercar.ma", 105, 42, { align: 'center' });
+
+        doc.setFontSize(14);
+        doc.setTextColor(26, 58, 108);
+        doc.text("Fiche de Parc Automobile", 105, 52, { align: 'center' });
+        doc.setFontSize(10);
+        doc.text(`Date: ${new Date().toLocaleDateString('fr-FR')}`, 105, 58, { align: 'center' });
+
+        doc.autoTable({
+            startY: 65,
+            head: [['Désignation', 'Immatriculation', 'Année', 'Carburant', 'Prix Achat (DH)']],
+            body: tableData,
+            theme: 'striped',
+            headStyles: { fillColor: [26, 58, 108], textColor: 255, fontStyle: 'bold' },
+            styles: { fontSize: 9, cellPadding: 2 },
+            margin: { left: 10, right: 10 }
+        });
+
+        let finalY = doc.lastAutoTable.finalY + 10;
+        if (hasStamp) {
+            try {
+                doc.addImage(stampImg, 'PNG', 80, finalY, 50, 25);
+                finalY += 30;
+            } catch(e) { console.warn("Cachet non ajoutable"); }
+        } else {
+            doc.setDrawColor(26, 58, 108);
+            doc.setLineWidth(0.5);
+            doc.rect(70, finalY, 70, 25);
+            doc.setFontSize(9);
+            doc.setTextColor(100);
+            doc.text("CACHET ET SIGNATURE", 105, finalY + 15, { align: 'center' });
+            finalY += 35;
+        }
+
+        doc.setFontSize(8);
+        doc.setTextColor(120);
+        doc.text("ABDERCAR - LOCATION DE VOITURES - Tous droits réservés", 105, finalY + 10, { align: 'center' });
+
+        doc.save('fiche_parc_abdercar.pdf');
+        showStatus("PDF généré avec succès");
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+    }
+
+    function uploadStamp(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const stampPreview = document.getElementById('stampPreview');
+                const stampText = document.getElementById('stampText');
+                stampPreview.src = e.target.result;
+                stampPreview.style.display = 'block';
+                stampText.style.display = 'none';
+                localStorage.setItem('abdercar_stamp', e.target.result);
+                showStatus("Cachet importé");
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+    function removeStamp() {
+        localStorage.removeItem('abdercar_stamp');
+        const stampPreview = document.getElementById('stampPreview');
+        const stampText = document.getElementById('stampText');
+        stampPreview.src = '';
+        stampPreview.style.display = 'none';
+        stampText.style.display = 'block';
+        document.getElementById('stampUpload').value = '';
+        showStatus("Cachet supprimé");
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) { window.location.href = "index.html"; return; }
+        currentUser = user;
+        document.getElementById('userEmail').innerText = user.email;
+        document.getElementById('currentDate').innerText = new Date().toLocaleDateString('fr-FR');
+        await loadVehicles();
+        const savedStamp = localStorage.getItem('abdercar_stamp');
+        if (savedStamp) {
+            document.getElementById('stampPreview').src = savedStamp;
+            document.getElementById('stampPreview').style.display = 'block';
+            document.getElementById('stampText').style.display = 'none';
+        }
+    });
+
+    document.getElementById('logoutBtn').onclick = () => signOut(auth);
+    document.getElementById('addVehicleBtn').onclick = addVehicle;
+    document.getElementById('resetBtn').onclick = resetToDefault;
+    document.getElementById('exportJsonBtn').onclick = exportToJSON;
+    document.getElementById('generatePdfBtn').onclick = generatePDF;
+    document.getElementById('stampUpload').onchange = uploadStamp;
+    window.removeStamp = removeStamp;
+</script>
+</body>
+</html>
