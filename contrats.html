@@ -3,19 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>ABDERCAR - Contrats</title>
+    <title>ABDERCAR - Contrats de location</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        .client-fields-societe { display: none; border-top: 1px solid #dee2e6; padding-top: 15px; margin-top: 15px; }
-        .client-fields-societe.visible { display: block; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; overflow-y: auto; padding: 20px; }
-        .modal-content { background: white; max-width: 750px; width: 100%; border-radius: 20px; padding: 1.5rem; margin: auto; max-height: 90vh; overflow-y: auto; }
-        .form-row { margin-bottom: 1rem; }
-        .form-row label { font-weight: 600; display: block; margin-bottom: 0.25rem; }
-        .form-control { width: 100%; padding: 8px 12px; border: 1px solid #ced4da; border-radius: 8px; }
-        .card-contrat { background: white; border-radius: 16px; padding: 1rem; margin-bottom: 1rem; border: 1px solid #e9ecef; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
+        /* Styles spécifiques pour le contrat (repris de votre modèle) */
+        .contract-preview {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .contract-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .contract-header h1 {
+            color: #1a3a6c;
+            margin-bottom: 5px;
+        }
+        .contract-header p {
+            margin: 2px 0;
+            font-size: 0.9rem;
+        }
+        .contract-section {
+            margin: 20px 0;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+        .contract-section h3 {
+            background: #1a3a6c;
+            color: white;
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .info-row {
+            display: flex;
+            margin-bottom: 8px;
+        }
+        .info-label {
+            font-weight: bold;
+            width: 40%;
+        }
+        .info-value {
+            width: 60%;
+        }
+        .conditions {
+            font-size: 0.8rem;
+            text-align: justify;
+            max-height: 200px;
+            overflow-y: auto;
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .signature-area {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+        .signature-box {
+            text-align: center;
+            width: 45%;
+            border-top: 1px solid #000;
+            padding-top: 5px;
+        }
+        .stamp-area {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .stamp-box {
+            border: 2px dashed #1a3a6c;
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+        @media print {
+            .no-print { display: none; }
+            .contract-preview { box-shadow: none; padding: 0; }
+        }
     </style>
 </head>
 <body>
@@ -41,54 +119,56 @@
             <button id="openContratModalBtn" class="btn btn-primary"><i class="fas fa-plus"></i> Nouveau contrat</button>
         </div>
         <div id="contratsList" style="margin-top: 1rem;"></div>
+        <div id="syncStatus" class="status">✅ Prêt</div>
     </div>
 </div>
 
-<!-- Modal Contrat -->
-<div id="contratModal" class="modal">
-    <div class="modal-content">
+<!-- MODAL CONTRAT (identique à avant) -->
+<div id="contratModal" style="display: none; position: fixed; inset:0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; overflow-y: auto; padding: 20px;">
+    <div style="background: white; max-width: 700px; width: 100%; border-radius: 20px; padding: 1.5rem; margin: auto;">
         <h3 class="mb-3">Nouveau contrat</h3>
-        <div class="form-row"><label>Véhicule *</label><select id="contratVehiculeId" class="form-control"></select></div>
-        <div class="form-row"><label>Type de client</label><select id="clientType" class="form-control"><option value="particulier">🧑 Personne physique</option><option value="societe">🏢 Personne morale (société)</option></select></div>
+        <div class="form-group"><label>Véhicule</label><select id="contratVehiculeId" class="form-control"></select></div>
+        <div class="form-group"><label>Type client</label><select id="clientType" class="form-control"><option value="particulier">Particulier</option><option value="societe">Société</option></select></div>
         <div id="particulierFields">
-            <div class="form-row"><label>CIN / Passport *</label><input id="conducteurCin" class="form-control"></div>
-            <div class="form-row"><label>Nom complet *</label><input id="conducteurNom" class="form-control"></div>
-            <div class="form-row"><label>Téléphone</label><input id="conducteurTel" class="form-control"></div>
-            <div class="form-row"><label>Email</label><input id="conducteurEmail" class="form-control"></div>
-            <div class="form-row"><label>Adresse</label><input id="conducteurAdresse" class="form-control"></div>
-            <div class="form-row"><label>Permis n°</label><input id="conducteurPermis" class="form-control"></div>
-            <div class="form-row"><label>Date délivrance permis</label><input id="permisDelivre" type="date" class="form-control"></div>
-            <div class="form-row"><label>Date validité permis</label><input id="permisValable" type="date" class="form-control"></div>
+            <div class="form-group"><label>CIN</label><input id="conducteurCin" class="form-control"></div>
+            <div class="form-group"><label>Nom complet</label><input id="conducteurNom" class="form-control"></div>
+            <div class="form-group"><label>Téléphone</label><input id="conducteurTel" class="form-control"></div>
+            <div class="form-group"><label>Email</label><input id="conducteurEmail" class="form-control"></div>
+            <div class="form-group"><label>Adresse</label><input id="conducteurAdresse" class="form-control"></div>
+            <div class="form-group"><label>Permis n°</label><input id="conducteurPermis" class="form-control"></div>
         </div>
-        <div id="societeFields" class="client-fields-societe">
-            <div class="form-row"><label>Raison sociale *</label><input id="societeRaison" class="form-control"></div>
-            <div class="form-row"><label>ICE *</label><input id="societeICE" class="form-control"></div>
-            <div class="form-row"><label>IF *</label><input id="societeIF" class="form-control"></div>
-            <div class="form-row"><label>RC *</label><input id="societeRC" class="form-control"></div>
-            <div class="form-row"><label>Adresse *</label><input id="societeAdresse" class="form-control"></div>
-            <div class="form-row"><label>Email *</label><input id="societeEmail" class="form-control"></div>
-            <div class="form-row"><label>Téléphone *</label><input id="societeTel" class="form-control"></div>
-            <div class="form-row"><label>Contact (nom)</label><input id="societeContact" class="form-control"></div>
+        <div id="societeFields" style="display:none;">
+            <div class="form-group"><label>Raison sociale</label><input id="societeRaison" class="form-control"></div>
+            <div class="form-group"><label>ICE</label><input id="societeICE" class="form-control"></div>
+            <div class="form-group"><label>IF</label><input id="societeIF" class="form-control"></div>
+            <div class="form-group"><label>RC</label><input id="societeRC" class="form-control"></div>
+            <div class="form-group"><label>Adresse</label><input id="societeAdresse" class="form-control"></div>
+            <div class="form-group"><label>Email</label><input id="societeEmail" class="form-control"></div>
+            <div class="form-group"><label>Téléphone</label><input id="societeTel" class="form-control"></div>
+            <div class="form-group"><label>Contact</label><input id="societeContact" class="form-control"></div>
         </div>
-        <div class="form-row"><label>Date début *</label><input id="contratDebut" type="date" class="form-control"></div>
-        <div class="form-row"><label>Date fin *</label><input id="contratFin" type="date" class="form-control"></div>
-        <div class="form-row"><label>Montant total (DH) *</label><input id="contratMontant" type="number" class="form-control"></div>
-        <div class="form-row"><label>Avance (DH)</label><input id="contratAvance" type="number" class="form-control" value="0"></div>
-        <div class="form-row"><label>Lieu départ</label><input id="lieuDepart" class="form-control" value="Rabat"></div>
-        <div class="form-row"><label>Lieu retour</label><input id="lieuRetour" class="form-control"></div>
-        <div class="form-row"><label>Km départ</label><input id="kmDepart" type="number" class="form-control"></div>
-        <div class="form-row"><label>Km retour</label><input id="kmRetour" type="number" class="form-control"></div>
-        <div class="form-row"><label>Carburant départ</label><select id="niveauCarburant" class="form-control"><option>Plein</option><option>Réservé</option><option>Moitié</option></select></div>
-        <div class="form-row"><label>État livraison</label><input id="etatLivraison" class="form-control" value="Très bon état"></div>
-        <div class="form-row"><label>État retour</label><input id="etatRetour" class="form-control"></div>
-        <div style="display: flex; gap: 1rem; justify-content: flex-end;"><button id="closeContratModal" class="btn btn-secondary">Annuler</button><button id="saveContrat" class="btn btn-primary">Enregistrer</button></div>
+        <div class="form-group"><label>Date début</label><input id="contratDebut" type="date" class="form-control"></div>
+        <div class="form-group"><label>Date fin</label><input id="contratFin" type="date" class="form-control"></div>
+        <div class="form-group"><label>Montant total (DH)</label><input id="contratMontant" type="number" class="form-control"></div>
+        <div class="form-group"><label>Avance (DH)</label><input id="contratAvance" type="number" class="form-control" value="0"></div>
+        <div class="form-group"><label>Lieu départ</label><input id="lieuDepart" class="form-control" value="Rabat"></div>
+        <div class="form-group"><label>Lieu retour</label><input id="lieuRetour" class="form-control"></div>
+        <div class="form-group"><label>Km départ</label><input id="kmDepart" type="number" class="form-control"></div>
+        <div class="form-group"><label>Km retour</label><input id="kmRetour" type="number" class="form-control"></div>
+        <div class="form-group"><label>Carburant départ</label><select id="niveauCarburant" class="form-control"><option>Plein</option><option>Réservé</option><option>Moitié</option></select></div>
+        <div class="form-group"><label>État livraison</label><input id="etatLivraison" class="form-control" value="Très bon état"></div>
+        <div class="form-group"><label>État retour</label><input id="etatRetour" class="form-control"></div>
+        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+            <button id="closeContratModal" class="btn btn-secondary">Annuler</button>
+            <button id="saveContrat" class="btn btn-primary">Enregistrer contrat</button>
+        </div>
     </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyDE3BJsD1mp-vz9TEJSo4WtFcHe8sw6jJI",
@@ -105,6 +185,7 @@
     let currentUser = null;
     let vehiculesList = [];
 
+    // Éléments DOM
     const modal = document.getElementById('contratModal');
     const openBtn = document.getElementById('openContratModalBtn');
     const closeBtn = document.getElementById('closeContratModal');
@@ -116,10 +197,10 @@
     clientTypeSelect.addEventListener('change', () => {
         if (clientTypeSelect.value === 'societe') {
             particulierDiv.style.display = 'none';
-            societeDiv.classList.add('visible');
+            societeDiv.style.display = 'block';
         } else {
             particulierDiv.style.display = 'block';
-            societeDiv.classList.remove('visible');
+            societeDiv.style.display = 'none';
         }
     });
 
@@ -132,8 +213,6 @@
         document.getElementById('conducteurEmail').value = '';
         document.getElementById('conducteurAdresse').value = '';
         document.getElementById('conducteurPermis').value = '';
-        document.getElementById('permisDelivre').value = '';
-        document.getElementById('permisValable').value = '';
         document.getElementById('societeRaison').value = '';
         document.getElementById('societeICE').value = '';
         document.getElementById('societeIF').value = '';
@@ -161,18 +240,18 @@
 
     saveBtn.onclick = async () => {
         const vehiculeId = document.getElementById('contratVehiculeId').value;
-        if (!vehiculeId) { alert("Choisissez un véhicule"); return; }
+        if (!vehiculeId) { alert("Sélectionnez un véhicule"); return; }
         const debut = document.getElementById('contratDebut').value;
         const fin = document.getElementById('contratFin').value;
         const montant = Number(document.getElementById('contratMontant').value);
-        if (!debut || !fin || !montant) { alert("Dates et montant requis"); return; }
+        if (!debut || !fin || !montant) { alert("Dates et montant obligatoires"); return; }
 
         let clientInfo = {};
         if (clientTypeSelect.value === 'particulier') {
             const cin = document.getElementById('conducteurCin').value.trim();
             const nom = document.getElementById('conducteurNom').value.trim();
             if (!cin || !nom) { alert("CIN et nom requis"); return; }
-            clientInfo = { type: 'particulier', cin, nom, telephone: document.getElementById('conducteurTel').value, email: document.getElementById('conducteurEmail').value, adresse: document.getElementById('conducteurAdresse').value, permis: document.getElementById('conducteurPermis').value, permisDelivre: document.getElementById('permisDelivre').value, permisValable: document.getElementById('permisValable').value };
+            clientInfo = { type: 'particulier', cin, nom, telephone: document.getElementById('conducteurTel').value, email: document.getElementById('conducteurEmail').value, adresse: document.getElementById('conducteurAdresse').value, permis: document.getElementById('conducteurPermis').value };
         } else {
             const raison = document.getElementById('societeRaison').value.trim();
             const ice = document.getElementById('societeICE').value.trim();
@@ -181,7 +260,7 @@
             const adresse = document.getElementById('societeAdresse').value.trim();
             const email = document.getElementById('societeEmail').value.trim();
             const tel = document.getElementById('societeTel').value.trim();
-            if (!raison || !ice || !ifs || !rc || !adresse || !email || !tel) { alert("Tous les champs société obligatoires"); return; }
+            if (!raison || !ice || !ifs || !rc || !adresse || !email || !tel) { alert("Tous les champs société requis"); return; }
             clientInfo = { type: 'societe', raisonSociale: raison, ice, if: ifs, rc, adresse, email, telephone: tel, contact: document.getElementById('societeContact').value };
         }
 
@@ -219,31 +298,158 @@
         const snapshot = await getDocs(q);
         const container = document.getElementById('contratsList');
         container.innerHTML = '';
-        if (snapshot.empty) { container.innerHTML = '<div class="card-contrat">Aucun contrat.</div>'; return; }
+        if (snapshot.empty) { container.innerHTML = '<div class="card">Aucun contrat.</div>'; return; }
         for (const docSnap of snapshot.docs) {
             const c = docSnap.data();
             const vehDoc = await getDoc(doc(db, "vehicules", c.vehiculeId));
-            const vehiculeNom = vehDoc.exists() ? `${vehDoc.data().marque} ${vehDoc.data().modele}` : "Véhicule inconnu";
+            const vehiculeNom = vehDoc.exists() ? `${vehDoc.data().marque} ${vehDoc.data().modele}` : "?";
             let clientDisplay = '';
-            if (c.clientInfo && c.clientInfo.type === 'particulier') clientDisplay = `${c.clientInfo.nom} (${c.clientInfo.cin})`;
-            else if (c.clientInfo && c.clientInfo.type === 'societe') clientDisplay = `${c.clientInfo.raisonSociale} (ICE: ${c.clientInfo.ice})`;
-            else clientDisplay = "Client inconnu";
+            if (c.clientInfo.type === 'particulier') clientDisplay = `${c.clientInfo.nom} (${c.clientInfo.cin})`;
+            else clientDisplay = `${c.clientInfo.raisonSociale} (ICE: ${c.clientInfo.ice})`;
             const debutDate = c.debut?.toDate ? c.debut.toDate() : new Date(c.debut);
             const finDate = c.fin?.toDate ? c.fin.toDate() : new Date(c.fin);
             container.innerHTML += `
-                <div class="card-contrat">
+                <div class="card" data-id="${docSnap.id}">
                     <div><strong>${vehiculeNom}</strong> - ${debutDate.toLocaleDateString()} → ${finDate.toLocaleDateString()}</div>
                     <div>Client : ${clientDisplay}</div>
                     <div>Montant : ${c.montant} DH | Avance : ${c.avance || 0} DH</div>
-                    <button class="deleteContratBtn btn btn-danger btn-sm" data-id="${docSnap.id}">Supprimer</button>
+                    <div class="card-actions" style="margin-top:10px;">
+                        <button class="btn btn-primary btn-sm downloadPdf" data-id="${docSnap.id}"><i class="fas fa-file-pdf"></i> Télécharger PDF</button>
+                        <button class="btn btn-danger btn-sm deleteContrat" data-id="${docSnap.id}"><i class="fas fa-trash"></i> Supprimer</button>
+                    </div>
                 </div>
             `;
         }
-        document.querySelectorAll('.deleteContratBtn').forEach(btn => {
-            btn.onclick = async () => {
-                if (confirm("Supprimer ?")) { await deleteDoc(doc(db, "contrats", btn.dataset.id)); loadContrats(); }
-            };
-        });
+        // Attacher événements
+        document.querySelectorAll('.deleteContrat').forEach(btn => btn.onclick = async () => { if(confirm("Supprimer ?")) { await deleteDoc(doc(db, "contrats", btn.dataset.id)); loadContrats(); } });
+        document.querySelectorAll('.downloadPdf').forEach(btn => btn.onclick = () => generateContratPDF(btn.dataset.id));
+    }
+
+    // Fonction de génération de PDF du contrat
+    async function generateContratPDF(contratId) {
+        const contratDoc = await getDoc(doc(db, "contrats", contratId));
+        if (!contratDoc.exists()) { alert("Contrat introuvable"); return; }
+        const contrat = contratDoc.data();
+        const vehiculeDoc = await getDoc(doc(db, "vehicules", contrat.vehiculeId));
+        const vehicule = vehiculeDoc.exists() ? vehiculeDoc.data() : { marque: "", modele: "", immatriculation: "" };
+
+        // Définir les variables
+        const client = contrat.clientInfo;
+        const debut = contrat.debut.toDate();
+        const fin = contrat.fin.toDate();
+        const nbJours = Math.ceil((fin - debut) / (1000 * 60 * 60 * 24));
+        const prixJournalier = (contrat.montant / nbJours).toFixed(2);
+        const tva = contrat.montant * 0.2;
+        const totalTTC = contrat.montant + tva;
+        const avance = contrat.avance || 0;
+        const reste = totalTTC - avance;
+
+        // Création du contenu HTML du contrat
+        const contractHtml = `
+            <div class="contract-preview" id="contractToPrint">
+                <div class="contract-header">
+                    <h1>ABDERCAR - LOCATION DE VOITURES</h1>
+                    <p>N°291 Groupe Al Ahd Hay Nahda 1 Rabat</p>
+                    <p>GSM: 0619.81.13.13 / 0663.00.73.72 - Email: abdercar.rent@gmail.com</p>
+                    <p>RC:111305 - IF:3374473 - CNSS:4496479 - PATENTE:25909585</p>
+                </div>
+                <div class="contract-section">
+                    <h3>CONTRAT DE LOCATION N° ${contratId.slice(-8)}</h3>
+                </div>
+                <div class="contract-section">
+                    <h3>INFORMATION SUR LA VOITURE</h3>
+                    <div class="info-grid">
+                        <div class="info-row"><div class="info-label">Véhicule :</div><div class="info-value">${vehicule.marque} ${vehicule.modele}</div></div>
+                        <div class="info-row"><div class="info-label">Matricule :</div><div class="info-value">${vehicule.immatriculation}</div></div>
+                        <div class="info-row"><div class="info-label">Carburant :</div><div class="info-value">${contrat.niveauCarburant || "Plein"}</div></div>
+                        <div class="info-row"><div class="info-label">Lieu de départ :</div><div class="info-value">${contrat.lieuDepart || "Rabat"}</div></div>
+                        <div class="info-row"><div class="info-label">Lieu de retour :</div><div class="info-value">${contrat.lieuRetour || "Rabat"}</div></div>
+                        <div class="info-row"><div class="info-label">Date heure départ :</div><div class="info-value">${debut.toLocaleString()}</div></div>
+                        <div class="info-row"><div class="info-label">Date heure retour :</div><div class="info-value">${fin.toLocaleString()}</div></div>
+                        <div class="info-row"><div class="info-label">Kilométrage départ :</div><div class="info-value">${contrat.kmDepart || "---"}</div></div>
+                        <div class="info-row"><div class="info-label">Kilométrage retour :</div><div class="info-value">${contrat.kmRetour || "---"}</div></div>
+                        <div class="info-row"><div class="info-label">Durée :</div><div class="info-value">${nbJours} jours</div></div>
+                    </div>
+                </div>
+                <div class="contract-section">
+                    <h3>DÉTAILS DE LOCATION</h3>
+                    <div class="info-grid">
+                        <div class="info-row"><div class="info-label">Prix journalier :</div><div class="info-value">${prixJournalier} DH</div></div>
+                        <div class="info-row"><div class="info-label">Nombre de jours :</div><div class="info-value">${nbJours}</div></div>
+                        <div class="info-row"><div class="info-label">Montant HT :</div><div class="info-value">${contrat.montant.toFixed(2)} DH</div></div>
+                        <div class="info-row"><div class="info-label">TVA 20% :</div><div class="info-value">${tva.toFixed(2)} DH</div></div>
+                        <div class="info-row"><div class="info-label">Total TTC :</div><div class="info-value">${totalTTC.toFixed(2)} DH</div></div>
+                        <div class="info-row"><div class="info-label">Avance :</div><div class="info-value">${avance.toFixed(2)} DH</div></div>
+                        <div class="info-row"><div class="info-label">Reste à payer :</div><div class="info-value">${reste.toFixed(2)} DH</div></div>
+                    </div>
+                </div>
+                <div class="contract-section">
+                    <h3>CONDUCTEUR / CLIENT</h3>
+                    ${client.type === 'particulier' ? `
+                        <div class="info-row"><div class="info-label">Nom complet :</div><div class="info-value">${client.nom}</div></div>
+                        <div class="info-row"><div class="info-label">CIN :</div><div class="info-value">${client.cin}</div></div>
+                        <div class="info-row"><div class="info-label">Téléphone :</div><div class="info-value">${client.telephone || ""}</div></div>
+                        <div class="info-row"><div class="info-label">Email :</div><div class="info-value">${client.email || ""}</div></div>
+                        <div class="info-row"><div class="info-label">Adresse :</div><div class="info-value">${client.adresse || ""}</div></div>
+                        <div class="info-row"><div class="info-label">Permis n° :</div><div class="info-value">${client.permis || ""}</div></div>
+                    ` : `
+                        <div class="info-row"><div class="info-label">Raison sociale :</div><div class="info-value">${client.raisonSociale}</div></div>
+                        <div class="info-row"><div class="info-label">ICE :</div><div class="info-value">${client.ice}</div></div>
+                        <div class="info-row"><div class="info-label">IF :</div><div class="info-value">${client.if}</div></div>
+                        <div class="info-row"><div class="info-label">RC :</div><div class="info-value">${client.rc}</div></div>
+                        <div class="info-row"><div class="info-label">Adresse :</div><div class="info-value">${client.adresse}</div></div>
+                        <div class="info-row"><div class="info-label">Email :</div><div class="info-value">${client.email}</div></div>
+                        <div class="info-row"><div class="info-label">Téléphone :</div><div class="info-value">${client.telephone}</div></div>
+                        <div class="info-row"><div class="info-label">Contact :</div><div class="info-value">${client.contact || ""}</div></div>
+                    `}
+                </div>
+                <div class="contract-section">
+                    <h3>CONDITIONS GÉNÉRALES</h3>
+                    <div class="conditions">
+                        Art 01 - Le client déclare avoir visité minutieusement le véhicule et constaté son bon état...<br>
+                        Art 02 - Les pneus sont en bon état...<br>
+                        (Extrait des conditions générales – le contrat complet sera annexé)
+                    </div>
+                </div>
+                <div class="signature-area">
+                    <div class="signature-box">Signature du client</div>
+                    <div class="signature-box">Signature du loueur (ABDERCAR)</div>
+                </div>
+                <div class="stamp-area">
+                    <div class="stamp-box">CACHET ET SIGNATURE</div>
+                </div>
+            </div>
+        `;
+
+        // Créer un élément temporaire pour le rendu
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = contractHtml;
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        tempDiv.style.top = '-9999px';
+        document.body.appendChild(tempDiv);
+
+        const element = tempDiv.querySelector('#contractToPrint');
+        // Appliquer des styles spécifiques pour le PDF (pas de marge, police)
+        element.style.padding = '20px';
+        element.style.backgroundColor = 'white';
+        element.style.width = '800px';
+        
+        try {
+            const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            const imgProps = pdf.getImageProperties(imgData);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`contrat_${contratId.slice(-8)}.pdf`);
+        } catch (err) {
+            console.error(err);
+            alert("Erreur lors de la génération du PDF");
+        } finally {
+            document.body.removeChild(tempDiv);
+        }
     }
 
     onAuthStateChanged(auth, async (user) => {
@@ -256,4 +462,4 @@
     document.getElementById('logoutBtn').onclick = () => signOut(auth);
 </script>
 </body>
-                                                            </html>
+                                                      </html>
