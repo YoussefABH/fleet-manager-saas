@@ -5,12 +5,11 @@
     <title>Espace investisseur</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: Arial; background: #f0f2f5; margin: 20px; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 20px; }
         .container { max-width: 1200px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .card { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 8px; }
         .btn { background: #28a745; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; margin-right: 5px; }
         .btn:hover { background: #218838; }
-        .btn.active { background: #007bff; }
         .stat { background: #007bff; color: white; padding: 15px; border-radius: 8px; margin: 10px; text-align: center; flex: 1; min-width: 200px; }
         .stat h3 { margin: 10px 0; font-size: 24px; }
         .flex { display: flex; flex-wrap: wrap; justify-content: space-between; }
@@ -27,17 +26,12 @@
 <div class="container">
     <h1>💼 Espace Investisseur</h1>
     <p id="investorName" style="font-size: 18px; color: #666;"></p>
-    
-    <!-- Statistiques principales -->
-    <h2>📊 Vos Statistiques</h2>
     <div class="flex">
         <div class="stat"><h3 id="totalInvest">0 DH</h3><div>Total investi</div></div>
         <div class="stat"><h3 id="totalDeals">0</h3><div>Nombre de deals</div></div>
         <div class="stat"><h3 id="avgDeals">0 DH</h3><div>Montant moyen</div></div>
         <div class="stat"><h3 id="avgDuration">0 j</h3><div>Durée moyenne</div></div>
     </div>
-
-    <!-- Filtrage par statut -->
     <div class="filter-section">
         <strong>Filtrer par statut :</strong>
         <button class="filter-btn active" data-filter="all">Tous</button>
@@ -45,27 +39,14 @@
         <button class="filter-btn" data-filter="Terminé">Terminés</button>
         <button class="filter-btn" data-filter="En attente">En attente</button>
     </div>
-
-    <!-- Graphiques -->
-    <h2>📈 Analyses Visuelles</h2>
     <div class="charts-container">
-        <div class="chart-box">
-            <h3>Répartition par Deal</h3>
-            <canvas id="pieChart"></canvas>
-        </div>
-        <div class="chart-box">
-            <h3>Montants Investis</h3>
-            <canvas id="barChart"></canvas>
-        </div>
+        <div class="chart-box"><h3>Répartition par Deal</h3><canvas id="pieChart"></canvas></div>
+        <div class="chart-box"><h3>Montants Investis</h3><canvas id="barChart"></canvas></div>
     </div>
-
-    <!-- Liste des deals -->
     <h2>📋 Mes Deals</h2>
     <div id="dealsList" class="deals-list"></div>
-
     <button id="exportPdf" class="btn">📥 Exporter PDF</button>
 </div>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -81,14 +62,11 @@
     };
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
     if (!token) { document.body.innerHTML = '<div class="container">Lien invalide</div>'; throw new Error("No token"); }
-
     const tokenSnap = await getDocs(query(collection(db, "acces_investisseurs"), where("token", "==", token)));
     if (tokenSnap.empty) { document.body.innerHTML = '<div class="container">Lien invalide ou expiré</div>'; throw new Error("Invalid token"); }
-    
     const access = tokenSnap.docs[0].data();
     const investorId = access.investisseurId;
     document.getElementById('investorName').innerHTML = `👋 Bonjour, <strong>${access.nom || 'Investisseur'}</strong>`;
@@ -99,119 +77,70 @@
 
     for (const dealDoc of dealsSnap.docs) {
         const deal = dealDoc.data();
-        let vehiclesNames = '';
-        let costAchat = 0;
-        
+        let vehiclesNames = '', costAchat = 0;
         for (let vid of deal.vehicules) {
             const vDoc = await getDoc(doc(db, "vehicules", vid));
-            if (vDoc.exists()) {
-                let v = vDoc.data();
-                vehiclesNames += \\`${v.marque} ${v.modele}, \\`;
-                costAchat += v.prixAchat || 0;
-            }
+            if (vDoc.exists()) { let v = vDoc.data(); vehiclesNames += `${v.marque} ${v.modele}, `; costAchat += v.prixAchat || 0; }
         }
-        
+        vehiclesNames = vehiclesNames.slice(0, -2);
         let investPart = costAchat * (deal.pourcentageAchat / 100);
         totalInvest += investPart;
-        
-        const startDate = deal.dateDebut ? new Date(deal.dateDebut) : null;
-        const endDate = deal.dateFin ? new Date(deal.dateFin) : null;
-        const duration = startDate && endDate ? Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) : 0;
-        
+        let startDate = deal.dateDebut?.toDate ? deal.dateDebut.toDate() : new Date(deal.dateDebut);
+        let endDate = deal.dateFin?.toDate ? deal.dateFin.toDate() : new Date(deal.dateFin);
+        let duration = startDate && endDate ? Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) : 0;
         allDeals.push({
-            id: dealDoc.id,
-            vehicules: vehiclesNames,
-            investPart: investPart,
-            pourcentageAchat: deal.pourcentageAchat,
-            pourcentageBenefice: deal.pourcentageBenefice,
+            id: dealDoc.id, vehicules: vehiclesNames, investPart: investPart,
+            pourcentageAchat: deal.pourcentageAchat, pourcentageBenefice: deal.pourcentageBenefice,
             dateDebut: startDate ? startDate.toLocaleDateString() : '?',
             dateFin: endDate ? endDate.toLocaleDateString() : '?',
-            statut: deal.statut,
-            duration: duration,
-            costAchat: costAchat
+            statut: deal.statut, duration: duration
         });
     }
-
-    // Statistiques
     document.getElementById('totalInvest').innerHTML = totalInvest.toFixed(2) + " DH";
     document.getElementById('totalDeals').innerHTML = allDeals.length;
-    document.getElementById('avgDeals').innerHTML = allDeals.length > 0 ? (totalInvest / allDeals.length).toFixed(2) + " DH" : "0 DH";
-    const avgDuration = allDeals.length > 0 ? Math.floor(allDeals.reduce((a, b) => a + b.duration, 0) / allDeals.length) : 0;
+    document.getElementById('avgDeals').innerHTML = allDeals.length ? (totalInvest / allDeals.length).toFixed(2) + " DH" : "0 DH";
+    const avgDuration = allDeals.length ? Math.floor(allDeals.reduce((a,b) => a + b.duration, 0) / allDeals.length) : 0;
     document.getElementById('avgDuration').innerHTML = avgDuration + " j";
 
-    // Graphiques
-    let pieChartInstance = null;
-    let barChartInstance = null;
-
-    function renderCharts(filteredDeals) {
-        const pieCtx = document.getElementById('pieChart').getContext('2d');
-        const barCtx = document.getElementById('barChart').getContext('2d');
-
-        if (pieChartInstance) pieChartInstance.destroy();
-        if (barChartInstance) barChartInstance.destroy();
-
-        pieChartInstance = new Chart(pieCtx, {
+    let pieChart, barChart;
+    function renderCharts(filtered) {
+        if (pieChart) pieChart.destroy();
+        if (barChart) barChart.destroy();
+        pieChart = new Chart(document.getElementById('pieChart'), {
             type: 'doughnut',
-            data: {
-                labels: filteredDeals.map((d, i) => `Deal ${i + 1}`),
-                datasets: [{
-                    data: filteredDeals.map(d => d.investPart),
-                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'],
-                }]
-            },
+            data: { labels: filtered.map((_,i) => `Deal ${i+1}`), datasets: [{ data: filtered.map(d => d.investPart), backgroundColor: ['#FF6384','#36A2EB','#FFCE56','#4BC0C0','#9966FF'] }] },
             options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
         });
-
-        barChartInstance = new Chart(barCtx, {
+        barChart = new Chart(document.getElementById('barChart'), {
             type: 'bar',
-            data: {
-                labels: filteredDeals.map((d, i) => `Deal ${i + 1}`),
-                datasets: [{
-                    label: 'Montant investi (DH)',
-                    data: filteredDeals.map(d => d.investPart),
-                    backgroundColor: '#007bff',
-                }]
-            },
+            data: { labels: filtered.map((_,i) => `Deal ${i+1}`), datasets: [{ label: 'Montant investi (DH)', data: filtered.map(d => d.investPart), backgroundColor: '#007bff' }] },
             options: { responsive: true, scales: { y: { beginAtZero: true } } }
         });
     }
-
-    function displayDeals(filteredDeals) {
-        const dealsList = document.getElementById('dealsList');
-        dealsList.innerHTML = '';
-        if (filteredDeals.length === 0) {
-            dealsList.innerHTML = '<p style="text-align: center; color: #999;">Aucun deal trouvé</p>';
-            return;
-        }
-        for (const deal of filteredDeals) {
-            dealsList.innerHTML += `
+    function displayDeals(filtered) {
+        const container = document.getElementById('dealsList');
+        container.innerHTML = '';
+        if (!filtered.length) { container.innerHTML = '<p style="text-align:center; color:#999;">Aucun deal trouvé</p>'; return; }
+        filtered.forEach(deal => {
+            const statusColor = deal.statut === 'Actif' ? '#28a745' : deal.statut === 'Terminé' ? '#6c757d' : '#ffc107';
+            container.innerHTML += `
                 <div class="card">
                     <strong>🚗 Véhicules :</strong> ${deal.vehicules}<br>
                     <strong>💰 Part investie :</strong> ${deal.pourcentageAchat}% → <strong>${deal.investPart.toFixed(2)} DH</strong><br>
                     <strong>📊 Part sur bénéfice :</strong> ${deal.pourcentageBenefice}%<br>
                     <strong>📅 Période :</strong> ${deal.dateDebut} → ${deal.dateFin} (${deal.duration} jours)<br>
-                    <strong>✅ Statut :</strong> <span style="padding: 5px 10px; border-radius: 5px; background: ${deal.statut === 'Actif' ? '#28a745' : deal.statut === 'Terminé' ? '#6c757d' : '#ffc107'}; color: white;">${deal.statut}</span>
-                </div>
-            `;
-        }
-        renderCharts(filteredDeals);
-    }
-
-    // Filtrage
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            e.target.classList.add('active');
-            const filter = e.target.dataset.filter;
-            const filteredDeals = filter === 'all' ? allDeals : allDeals.filter(d => d.statut === filter);
-            displayDeals(filteredDeals);
+                    <strong>✅ Statut :</strong> <span style="padding: 5px 10px; border-radius: 5px; background: ${statusColor}; color: white;">${deal.statut}</span>
+                </div>`;
         });
-    });
-
-    // Affichage initial
+        renderCharts(filtered);
+    }
+    document.querySelectorAll('.filter-btn').forEach(btn => btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        const filter = e.target.dataset.filter;
+        displayDeals(filter === 'all' ? allDeals : allDeals.filter(d => d.statut === filter));
+    }));
     displayDeals(allDeals);
-
-    // Export PDF
     document.getElementById('exportPdf').onclick = () => html2pdf().from(document.querySelector('.container')).save('investissements.pdf');
 </script>
 </body>
