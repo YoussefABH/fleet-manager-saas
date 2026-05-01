@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>ABDERCAR - Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<div class="app-container">
+    <div class="main-header"><div class="logo"><h1><i class="fas fa-car"></i> ABDERCAR</h1><p>Gestion de flotte</p></div><div class="user-actions"><span id="userEmail"></span><button id="logoutBtn" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Déconnexion</button></div></div>
+    <div class="main-nav"><a href="dashboard.html" class="nav-link active">📊 Dashboard</a><a href="vehicules.html" class="nav-link">🚗 Véhicules</a><a href="contrats.html" class="nav-link">📝 Contrats</a><a href="depenses.html" class="nav-link">💰 Dépenses</a><a href="credits.html" class="nav-link">🏦 Crédits</a><a href="investisseurs.html" class="nav-link">👥 Investisseurs</a><a href="ia.html" class="nav-link">🤖 IA</a><a href="facturation.html" class="nav-link">📄 Facturation</a><a href="parc-auto.html" class="nav-link">📋 Parc Auto</a></div>
+    <div class="content"><h2>📈 Tableau de bord</h2><div class="grid-2"><div class="card"><h3>Revenus totaux</h3><p id="revenus">0 DH</p></div><div class="card"><h3>Dépenses totales</h3><p id="depenses">0 DH</p></div><div class="card"><h3>Bénéfice net</h3><p id="benefice">0 DH</p></div><div class="card"><h3>Marge (%)</h3><p id="marge">0 %</p></div></div><div class="card"><canvas id="chart"></canvas></div></div>
+</div>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    const firebaseConfig = { apiKey: "AIzaSyDE3BJsD1mp-vz9TEJSo4WtFcHe8sw6jJI", authDomain: "gslv-c3875.firebaseapp.com", projectId: "gslv-c3875", storageBucket: "gslv-c3875.firebasestorage.app", messagingSenderId: "971384785471", appId: "1:971384785471:web:c881bc4db0595720ae068a" };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    onAuthStateChanged(auth, async (user) => { if (!user) window.location.href="index.html"; else { document.getElementById('userEmail').innerText = user.email; await chargerStats(); } });
+    document.getElementById('logoutBtn').onclick = () => signOut(auth);
+    async function chargerStats() { const contratsSnap = await getDocs(collection(db, "contrats")); let revenus = 0; contratsSnap.forEach(d => revenus += d.data().montant); const depensesSnap = await getDocs(collection(db, "depenses")); let depenses = 0; depensesSnap.forEach(d => depenses += d.data().montant); const benef = revenus - depenses; const marge = revenus ? (benef/revenus*100).toFixed(1) : 0; document.getElementById('revenus').innerText = revenus + ' DH'; document.getElementById('depenses').innerText = depenses + ' DH'; document.getElementById('benefice').innerText = benef + ' DH'; document.getElementById('marge').innerText = marge + ' %'; new Chart(document.getElementById('chart'), { type:'bar', data:{ labels:['Revenus','Dépenses'], datasets:[{ data:[revenus,depenses], backgroundColor:['#28a745','#e74c3c'] }] } }); }
+</script>
+</body>
+</html>

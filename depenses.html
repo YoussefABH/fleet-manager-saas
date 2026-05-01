@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABDERCAR - Dépenses</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+<div class="app-container">
+    <div class="main-header">
+        <div class="logo"><h1><i class="fas fa-car"></i> ABDERCAR</h1><p>Gestion de flotte</p></div>
+        <div class="user-actions"><span id="userEmail"></span><button id="logoutBtn" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Déconnexion</button></div>
+    </div>
+    <div class="main-nav">
+        <a href="dashboard.html" class="nav-link">📊 Dashboard</a>
+        <a href="vehicules.html" class="nav-link">🚗 Véhicules</a>
+        <a href="contrats.html" class="nav-link">📝 Contrats</a>
+        <a href="depenses.html" class="nav-link active">💰 Dépenses</a>
+        <a href="credits.html" class="nav-link">🏦 Crédits</a>
+        <a href="investisseurs.html" class="nav-link">👥 Investisseurs</a>
+        <a href="ia.html" class="nav-link">🤖 IA</a>
+        <a href="facturation.html" class="nav-link">📄 Facturation</a>
+        <a href="parc-auto.html" class="nav-link">📋 Parc Auto</a>
+    </div>
+    <div class="content">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2>💰 Dépenses</h2>
+            <button id="openDepenseModalBtn" class="btn btn-primary"><i class="fas fa-plus"></i> Ajouter une dépense</button>
+        </div>
+        <div class="card">
+            <div class="grid-2">
+                <div><label>Total général</label><h3 id="totalGlobalDepenses">0 DH</h3></div>
+                <div><label>Filtrer par véhicule</label><select id="filtreVehiculeDepense" class="form-control"></select></div>
+            </div>
+        </div>
+        <div id="depensesList"></div>
+    </div>
+</div>
+
+<!-- Modal Dépense -->
+<div id="depenseModal" style="display: none; position: fixed; inset:0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
+    <div style="background: white; max-width: 500px; width: 90%; border-radius: 20px; padding: 1.5rem;">
+        <h3 class="mb-3">Nouvelle dépense</h3>
+        <div class="form-group"><label>Véhicule</label><select id="depenseVehiculeId" class="form-control"></select></div>
+        <div class="form-group"><label>Type</label><select id="depenseType" class="form-control"><option value="carburant">Carburant</option><option value="reparation">Réparation</option><option value="assurance">Assurance</option><option value="amende">Amende</option><option value="autre">Autre</option></select></div>
+        <div class="form-group"><label>Montant (DH)</label><input id="depenseMontant" type="number" class="form-control"></div>
+        <div class="form-group"><label>Date</label><input id="depenseDate" type="date" class="form-control"></div>
+        <div class="form-group"><label>Commentaire</label><input id="depenseCommentaire" class="form-control"></div>
+        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+            <button id="closeDepenseModal" class="btn btn-secondary">Annuler</button>
+            <button id="saveDepense" class="btn btn-primary">Enregistrer</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+    apiKey: "AIzaSyDE3BJsD1mp-vz9TEJSo4WtFcHe8sw6jJI",
+    authDomain: "gslv-c3875.firebaseapp.com",
+    projectId: "gslv-c3875",
+    storageBucket: "gslv-c3875.firebasestorage.app",
+    messagingSenderId: "971384785471",
+    appId: "1:971384785471:web:c881bc4db0595720ae068a"
+  };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    let currentUser = null;
+    let vehiculesList = [];
+    let depensesData = [];
+
+    onAuthStateChanged(auth, (user) => {
+        if (!user) window.location.href = "index.html";
+        else { currentUser = user; document.getElementById('userEmail').innerText = user.email; loadVehicules(); loadDepenses(); }
+    });
+    document.getElementById('logoutBtn').onclick = () => signOut(auth);
+
+    async function loadVehicules() {
+        const q = query(collection(db, "vehicules"), where("userId", "==", currentUser.uid));
+        const snap = await getDocs(q);
+        vehiculesList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const select = document.getElementById('depenseVehiculeId');
+        const filtre = document.getElementById('filtreVehiculeDepense');
+        select.innerHTML = '<option value="">Sélectionner</option>';
+        filtre.innerHTML = '<option value="all">Tous les véhicules</option>';
+        vehiculesList.forEach(v => {
+            select.innerHTML += `<option value="${v.id}">${v.marque} ${v.modele}</option>`;
+            filtre.innerHTML += `<option value="${v.id}">${v.marque} ${v.modele}</option>`;
+        });
+    }
+    async function loadDepenses() {
+        const q = query(collection(db, "depenses"), where("userId", "==", currentUser.uid));
+        const snap = await getDocs(q);
+        depensesData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        afficherDepenses();
+    }
+    function afficherDepenses() {
+        const filtreV = document.getElementById('filtreVehiculeDepense').value;
+        let filtered = depensesData;
+        if (filtreV !== 'all') filtered = depensesData.filter(d => d.vehiculeId === filtreV);
+        const total = filtered.reduce((s,d)=>s+d.montant,0);
+        document.getElementById('totalGlobalDepenses').innerHTML = total + ' DH';
+        const container = document.getElementById('depensesList');
+        if (filtered.length === 0) { container.innerHTML = '<div class="card">Aucune dépense.</div>'; return; }
+        container.innerHTML = filtered.map(d => {
+            const v = vehiculesList.find(vv => vv.id === d.vehiculeId);
+            const nomV = v ? `${v.marque} ${v.modele}` : '?';
+            const dateStr = d.date?.toDate ? d.date.toDate().toLocaleDateString() : d.date;
+            return `<div class="card"><div><strong>${nomV}</strong> - ${d.type} : ${d.montant} DH le ${dateStr}<br>${d.commentaire||''}</div><button class="deleteDepenseBtn btn btn-danger mt-2" data-id="${d.id}">Supprimer</button></div>`;
+        }).join('');
+        document.querySelectorAll('.deleteDepenseBtn').forEach(btn => btn.onclick = () => deleteDepense(btn.dataset.id));
+    }
+    async function deleteDepense(id) { if(confirm("Supprimer ?")) { await deleteDoc(doc(db, "depenses", id)); loadDepenses(); } }
+    document.getElementById('openDepenseModalBtn').onclick = () => {
+        if(vehiculesList.length===0){ alert("Ajoutez un véhicule."); return; }
+        document.getElementById('depenseModal').style.display = 'flex';
+    };
+    document.getElementById('closeDepenseModal').onclick = () => document.getElementById('depenseModal').style.display = 'none';
+    document.getElementById('saveDepense').onclick = async () => {
+        const vehiculeId = document.getElementById('depenseVehiculeId').value;
+        const montant = Number(document.getElementById('depenseMontant').value);
+        const date = document.getElementById('depenseDate').value;
+        if(!vehiculeId || !montant || !date) { alert("Véhicule, montant et date requis"); return; }
+        await addDoc(collection(db, "depenses"), { vehiculeId, montant, type: document.getElementById('depenseType').value, date: new Date(date), commentaire: document.getElementById('depenseCommentaire').value, userId: currentUser.uid, createdAt: new Date() });
+        document.getElementById('depenseModal').style.display = 'none';
+        loadDepenses();
+    };
+    document.getElementById('filtreVehiculeDepense').addEventListener('change', () => afficherDepenses());
+</script>
+</body>
+  </html>

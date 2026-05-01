@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABDERCAR - IA Stratégique</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+<div class="app-container">
+    <div class="main-header"><div class="logo"><h1><i class="fas fa-car"></i> ABDERCAR</h1><p>Gestion de flotte</p></div><div class="user-actions"><span id="userEmail"></span><button id="logoutBtn" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Déconnexion</button></div></div>
+    <div class="main-nav"><a href="dashboard.html" class="nav-link">📊 Dashboard</a><a href="vehicules.html" class="nav-link">🚗 Véhicules</a><a href="contrats.html" class="nav-link">📝 Contrats</a><a href="depenses.html" class="nav-link">💰 Dépenses</a><a href="credits.html" class="nav-link">🏦 Crédits</a><a href="investisseurs.html" class="nav-link">👥 Investisseurs</a><a href="ia.html" class="nav-link active">🤖 IA</a><a href="facturation.html" class="nav-link">📄 Facturation</a><a href="parc-auto.html" class="nav-link">📋 Parc Auto</a></div>
+    <div class="content"><div class="card" style="background: linear-gradient(135deg, #1a3a6c, #2c5282); color: white;"><h2>🤖 Assistant Stratégique</h2><p>Analyse en temps réel de votre flotte</p><div id="iaMessages"><div class="card" style="background: rgba(255,255,255,0.2);">Analyse en cours...</div></div></div></div>
+</div>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    const firebaseConfig = {
+    apiKey: "AIzaSyDE3BJsD1mp-vz9TEJSo4WtFcHe8sw6jJI",
+    authDomain: "gslv-c3875.firebaseapp.com",
+    projectId: "gslv-c3875",
+    storageBucket: "gslv-c3875.firebasestorage.app",
+    messagingSenderId: "971384785471",
+    appId: "1:971384785471:web:c881bc4db0595720ae068a"
+  };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    let currentUser = null;
+    onAuthStateChanged(auth, (user) => { if (!user) window.location.href = "index.html"; else { currentUser = user; document.getElementById('userEmail').innerText = user.email; genererRecommandationsIA(); } });
+    document.getElementById('logoutBtn').onclick = () => signOut(auth);
+    async function genererRecommandationsIA() {
+        const messagesDiv = document.getElementById('iaMessages');
+        messagesDiv.innerHTML = '<div class="card" style="background: rgba(255,255,255,0.2);">🤔 Analyse...</div>';
+        const vehiculesSnap = await getDocs(query(collection(db, "vehicules"), where("userId", "==", currentUser.uid)));
+        const depensesSnapAll = await getDocs(query(collection(db, "depenses"), where("userId", "==", currentUser.uid)));
+        const depensesData = depensesSnapAll.docs.map(d => d.data());
+        const recommandations = [];
+        for (const vDoc of vehiculesSnap.docs) {
+            const v = vDoc.data();
+            const benef = await calculerBeneficeVehicule(vDoc.id);
+            const roi = (benef / v.prixAchat) * 100;
+            let decision = '';
+            if (roi < 5 && benef > 0) decision = `⚠️ ROI faible (${roi.toFixed(1)}%) → envisagez de vendre ${v.marque} ${v.modele}`;
+            else if (benef < 0) decision = `🔴 Déficitaire → VENDRE URGENCE ${v.marque} ${v.modele}`;
+            else decision = `✅ Rentable (ROI ${roi.toFixed(1)}%) → GARDER`;
+            const depensesVehicule = depensesData.filter(d => d.vehiculeId === vDoc.id);
+            const depensesParMois = {};
+            depensesVehicule.forEach(d => { const mois = d.date?.toDate().toLocaleString('default', { month: 'long', year: 'numeric' }); if (mois) depensesParMois[mois] = (depensesParMois[mois] || 0) + d.montant; });
+            const hausseAnormale = Object.values(depensesParMois).some((val, i, arr) => i>0 && val > arr[i-1]*1.5);
+            let alerte = hausseAnormale ? `📈 Hausse suspecte des dépenses sur ${v.marque} ${v.modele}` : '';
+            recommandations.push({ decision, alerte });
+        }
+        const totalDepenses = depensesData.reduce((s,d)=>s+d.montant,0);
+        const contratsSnap = await getDocs(query(collection(db, "contrats"), where("userId", "==", currentUser.uid)));
+        const totalContrats = contratsSnap.docs.reduce((s,d)=>s+d.data().montant,0);
+        const marge = totalContrats === 0 ? 0 : ((totalContrats - totalDepenses) / totalContrats * 100).toFixed(1);
+        let conseilGlobal = marge < 20 ? `💡 Marge brute ${marge}% → augmentez les loyers ou réduisez les frais.` : `📊 Excellente marge (${marge}%) → pensez à diversifier.`;
+        messagesDiv.innerHTML = recommandations.map(r => `<div class="card" style="background: rgba(255,255,255,0.2);">${r.decision}<br>${r.alerte ? `<span class="badge badge-warning">${r.alerte}</span>` : ''}</div>`).join('') + `<div class="card" style="background: rgba(255,255,255,0.2); font-weight: bold;">${conseilGlobal}</div><div class="text-right">🤖 ${new Date().toLocaleString()}</div>`;
+    }
+    async function calculerBeneficeVehicule(vehiculeId) { const contratsSnap = await getDocs(query(collection(db, "contrats"), where("vehiculeId", "==", vehiculeId))); let revenus = contratsSnap.docs.reduce((s,d)=>s+d.data().montant,0); const depensesSnap = await getDocs(query(collection(db, "depenses"), where("vehiculeId", "==", vehiculeId))); let depenses = depensesSnap.docs.reduce((s,d)=>s+d.data().montant,0); return revenus - depenses; }
+</script>
+</body>
+</html>

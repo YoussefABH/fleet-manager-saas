@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>ABDERCAR - Contrats</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .client-fields-societe { display: none; border-top: 1px solid #dee2e6; padding-top: 15px; margin-top: 15px; }
+        .client-fields-societe.visible { display: block; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; overflow-y: auto; padding: 20px; }
+        .modal-content { background: white; max-width: 750px; width: 100%; border-radius: 20px; padding: 1.5rem; margin: auto; max-height: 90vh; overflow-y: auto; }
+        .form-row { margin-bottom: 1rem; }
+        .form-row label { font-weight: 600; display: block; margin-bottom: 0.25rem; }
+        .form-control { width: 100%; padding: 8px 12px; border: 1px solid #ced4da; border-radius: 8px; }
+        .card-contrat { background: white; border-radius: 16px; padding: 1rem; margin-bottom: 1rem; border: 1px solid #e9ecef; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="main-header">
+        <div class="logo"><h1><i class="fas fa-car"></i> ABDERCAR</h1><p>Gestion de flotte</p></div>
+        <div class="user-actions"><span id="userEmail"></span><button id="logoutBtn" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Déconnexion</button></div>
+    </div>
+    <div class="main-nav">
+        <a href="dashboard.html" class="nav-link">📊 Dashboard</a>
+        <a href="vehicules.html" class="nav-link">🚗 Véhicules</a>
+        <a href="contrats.html" class="nav-link active">📝 Contrats</a>
+        <a href="depenses.html" class="nav-link">💰 Dépenses</a>
+        <a href="credits.html" class="nav-link">🏦 Crédits</a>
+        <a href="investisseurs.html" class="nav-link">👥 Investisseurs</a>
+        <a href="ia.html" class="nav-link">🤖 IA</a>
+        <a href="facturation.html" class="nav-link">📄 Facturation</a>
+        <a href="parc-auto.html" class="nav-link">📋 Parc Auto</a>
+    </div>
+    <div class="content">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <h2>📝 Contrats de location</h2>
+            <button id="openContratModalBtn" class="btn btn-primary"><i class="fas fa-plus"></i> Nouveau contrat</button>
+        </div>
+        <div id="contratsList" style="margin-top: 1rem;"></div>
+    </div>
+</div>
+
+<!-- Modal Contrat -->
+<div id="contratModal" class="modal">
+    <div class="modal-content">
+        <h3 class="mb-3">Nouveau contrat</h3>
+        <div class="form-row"><label>Véhicule *</label><select id="contratVehiculeId" class="form-control"></select></div>
+        <div class="form-row"><label>Type de client</label><select id="clientType" class="form-control"><option value="particulier">🧑 Personne physique</option><option value="societe">🏢 Personne morale (société)</option></select></div>
+        <div id="particulierFields">
+            <div class="form-row"><label>CIN / Passport *</label><input id="conducteurCin" class="form-control"></div>
+            <div class="form-row"><label>Nom complet *</label><input id="conducteurNom" class="form-control"></div>
+            <div class="form-row"><label>Téléphone</label><input id="conducteurTel" class="form-control"></div>
+            <div class="form-row"><label>Email</label><input id="conducteurEmail" class="form-control"></div>
+            <div class="form-row"><label>Adresse</label><input id="conducteurAdresse" class="form-control"></div>
+            <div class="form-row"><label>Permis n°</label><input id="conducteurPermis" class="form-control"></div>
+            <div class="form-row"><label>Date délivrance permis</label><input id="permisDelivre" type="date" class="form-control"></div>
+            <div class="form-row"><label>Date validité permis</label><input id="permisValable" type="date" class="form-control"></div>
+        </div>
+        <div id="societeFields" class="client-fields-societe">
+            <div class="form-row"><label>Raison sociale *</label><input id="societeRaison" class="form-control"></div>
+            <div class="form-row"><label>ICE *</label><input id="societeICE" class="form-control"></div>
+            <div class="form-row"><label>IF *</label><input id="societeIF" class="form-control"></div>
+            <div class="form-row"><label>RC *</label><input id="societeRC" class="form-control"></div>
+            <div class="form-row"><label>Adresse *</label><input id="societeAdresse" class="form-control"></div>
+            <div class="form-row"><label>Email *</label><input id="societeEmail" class="form-control"></div>
+            <div class="form-row"><label>Téléphone *</label><input id="societeTel" class="form-control"></div>
+            <div class="form-row"><label>Contact (nom)</label><input id="societeContact" class="form-control"></div>
+        </div>
+        <div class="form-row"><label>Date début *</label><input id="contratDebut" type="date" class="form-control"></div>
+        <div class="form-row"><label>Date fin *</label><input id="contratFin" type="date" class="form-control"></div>
+        <div class="form-row"><label>Montant total (DH) *</label><input id="contratMontant" type="number" class="form-control"></div>
+        <div class="form-row"><label>Avance (DH)</label><input id="contratAvance" type="number" class="form-control" value="0"></div>
+        <div class="form-row"><label>Lieu départ</label><input id="lieuDepart" class="form-control" value="Rabat"></div>
+        <div class="form-row"><label>Lieu retour</label><input id="lieuRetour" class="form-control"></div>
+        <div class="form-row"><label>Km départ</label><input id="kmDepart" type="number" class="form-control"></div>
+        <div class="form-row"><label>Km retour</label><input id="kmRetour" type="number" class="form-control"></div>
+        <div class="form-row"><label>Carburant départ</label><select id="niveauCarburant" class="form-control"><option>Plein</option><option>Réservé</option><option>Moitié</option></select></div>
+        <div class="form-row"><label>État livraison</label><input id="etatLivraison" class="form-control" value="Très bon état"></div>
+        <div class="form-row"><label>État retour</label><input id="etatRetour" class="form-control"></div>
+        <div style="display: flex; gap: 1rem; justify-content: flex-end;"><button id="closeContratModal" class="btn btn-secondary">Annuler</button><button id="saveContrat" class="btn btn-primary">Enregistrer</button></div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDE3BJsD1mp-vz9TEJSo4WtFcHe8sw6jJI",
+        authDomain: "gslv-c3875.firebaseapp.com",
+        projectId: "gslv-c3875",
+        storageBucket: "gslv-c3875.firebasestorage.app",
+        messagingSenderId: "971384785471",
+        appId: "1:971384785471:web:c881bc4db0595720ae068a"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    let currentUser = null;
+    let vehiculesList = [];
+
+    const modal = document.getElementById('contratModal');
+    const openBtn = document.getElementById('openContratModalBtn');
+    const closeBtn = document.getElementById('closeContratModal');
+    const saveBtn = document.getElementById('saveContrat');
+    const clientTypeSelect = document.getElementById('clientType');
+    const particulierDiv = document.getElementById('particulierFields');
+    const societeDiv = document.getElementById('societeFields');
+
+    clientTypeSelect.addEventListener('change', () => {
+        if (clientTypeSelect.value === 'societe') {
+            particulierDiv.style.display = 'none';
+            societeDiv.classList.add('visible');
+        } else {
+            particulierDiv.style.display = 'block';
+            societeDiv.classList.remove('visible');
+        }
+    });
+
+    openBtn.onclick = () => {
+        if (vehiculesList.length === 0) { alert("Ajoutez d'abord un véhicule."); return; }
+        document.getElementById('contratVehiculeId').value = '';
+        document.getElementById('conducteurCin').value = '';
+        document.getElementById('conducteurNom').value = '';
+        document.getElementById('conducteurTel').value = '';
+        document.getElementById('conducteurEmail').value = '';
+        document.getElementById('conducteurAdresse').value = '';
+        document.getElementById('conducteurPermis').value = '';
+        document.getElementById('permisDelivre').value = '';
+        document.getElementById('permisValable').value = '';
+        document.getElementById('societeRaison').value = '';
+        document.getElementById('societeICE').value = '';
+        document.getElementById('societeIF').value = '';
+        document.getElementById('societeRC').value = '';
+        document.getElementById('societeAdresse').value = '';
+        document.getElementById('societeEmail').value = '';
+        document.getElementById('societeTel').value = '';
+        document.getElementById('societeContact').value = '';
+        document.getElementById('contratDebut').value = '';
+        document.getElementById('contratFin').value = '';
+        document.getElementById('contratMontant').value = '';
+        document.getElementById('contratAvance').value = '0';
+        document.getElementById('lieuDepart').value = 'Rabat';
+        document.getElementById('lieuRetour').value = '';
+        document.getElementById('kmDepart').value = '';
+        document.getElementById('kmRetour').value = '';
+        document.getElementById('niveauCarburant').value = 'Plein';
+        document.getElementById('etatLivraison').value = 'Très bon état';
+        document.getElementById('etatRetour').value = '';
+        clientTypeSelect.dispatchEvent(new Event('change'));
+        modal.style.display = 'flex';
+    };
+    closeBtn.onclick = () => modal.style.display = 'none';
+    window.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+
+    saveBtn.onclick = async () => {
+        const vehiculeId = document.getElementById('contratVehiculeId').value;
+        if (!vehiculeId) { alert("Choisissez un véhicule"); return; }
+        const debut = document.getElementById('contratDebut').value;
+        const fin = document.getElementById('contratFin').value;
+        const montant = Number(document.getElementById('contratMontant').value);
+        if (!debut || !fin || !montant) { alert("Dates et montant requis"); return; }
+
+        let clientInfo = {};
+        if (clientTypeSelect.value === 'particulier') {
+            const cin = document.getElementById('conducteurCin').value.trim();
+            const nom = document.getElementById('conducteurNom').value.trim();
+            if (!cin || !nom) { alert("CIN et nom requis"); return; }
+            clientInfo = { type: 'particulier', cin, nom, telephone: document.getElementById('conducteurTel').value, email: document.getElementById('conducteurEmail').value, adresse: document.getElementById('conducteurAdresse').value, permis: document.getElementById('conducteurPermis').value, permisDelivre: document.getElementById('permisDelivre').value, permisValable: document.getElementById('permisValable').value };
+        } else {
+            const raison = document.getElementById('societeRaison').value.trim();
+            const ice = document.getElementById('societeICE').value.trim();
+            const ifs = document.getElementById('societeIF').value.trim();
+            const rc = document.getElementById('societeRC').value.trim();
+            const adresse = document.getElementById('societeAdresse').value.trim();
+            const email = document.getElementById('societeEmail').value.trim();
+            const tel = document.getElementById('societeTel').value.trim();
+            if (!raison || !ice || !ifs || !rc || !adresse || !email || !tel) { alert("Tous les champs société obligatoires"); return; }
+            clientInfo = { type: 'societe', raisonSociale: raison, ice, if: ifs, rc, adresse, email, telephone: tel, contact: document.getElementById('societeContact').value };
+        }
+
+        const contratData = {
+            vehiculeId, clientInfo, debut: new Date(debut), fin: new Date(fin), montant,
+            avance: Number(document.getElementById('contratAvance').value) || 0,
+            lieuDepart: document.getElementById('lieuDepart').value,
+            lieuRetour: document.getElementById('lieuRetour').value,
+            kmDepart: Number(document.getElementById('kmDepart').value) || null,
+            kmRetour: Number(document.getElementById('kmRetour').value) || null,
+            niveauCarburant: document.getElementById('niveauCarburant').value,
+            etatLivraison: document.getElementById('etatLivraison').value,
+            etatRetour: document.getElementById('etatRetour').value,
+            userId: currentUser.uid, createdAt: new Date(), updatedAt: new Date(), statut: "actif"
+        };
+        try {
+            await addDoc(collection(db, "contrats"), contratData);
+            alert("Contrat enregistré");
+            modal.style.display = 'none';
+            loadContrats();
+        } catch (error) { alert("Erreur: "+error.message); }
+    };
+
+    async function loadVehicules() {
+        const q = query(collection(db, "vehicules"), where("userId", "==", currentUser.uid));
+        const snap = await getDocs(q);
+        vehiculesList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const select = document.getElementById('contratVehiculeId');
+        select.innerHTML = '<option value="">Sélectionner</option>';
+        vehiculesList.forEach(v => select.innerHTML += `<option value="${v.id}">${v.marque} ${v.modele} - ${v.immatriculation}</option>`);
+    }
+
+    async function loadContrats() {
+        const q = query(collection(db, "contrats"), where("userId", "==", currentUser.uid));
+        const snapshot = await getDocs(q);
+        const container = document.getElementById('contratsList');
+        container.innerHTML = '';
+        if (snapshot.empty) { container.innerHTML = '<div class="card-contrat">Aucun contrat.</div>'; return; }
+        for (const docSnap of snapshot.docs) {
+            const c = docSnap.data();
+            const vehDoc = await getDoc(doc(db, "vehicules", c.vehiculeId));
+            const vehiculeNom = vehDoc.exists() ? `${vehDoc.data().marque} ${vehDoc.data().modele}` : "Véhicule inconnu";
+            let clientDisplay = '';
+            if (c.clientInfo && c.clientInfo.type === 'particulier') clientDisplay = `${c.clientInfo.nom} (${c.clientInfo.cin})`;
+            else if (c.clientInfo && c.clientInfo.type === 'societe') clientDisplay = `${c.clientInfo.raisonSociale} (ICE: ${c.clientInfo.ice})`;
+            else clientDisplay = "Client inconnu";
+            const debutDate = c.debut?.toDate ? c.debut.toDate() : new Date(c.debut);
+            const finDate = c.fin?.toDate ? c.fin.toDate() : new Date(c.fin);
+            container.innerHTML += `
+                <div class="card-contrat">
+                    <div><strong>${vehiculeNom}</strong> - ${debutDate.toLocaleDateString()} → ${finDate.toLocaleDateString()}</div>
+                    <div>Client : ${clientDisplay}</div>
+                    <div>Montant : ${c.montant} DH | Avance : ${c.avance || 0} DH</div>
+                    <button class="deleteContratBtn btn btn-danger btn-sm" data-id="${docSnap.id}">Supprimer</button>
+                </div>
+            `;
+        }
+        document.querySelectorAll('.deleteContratBtn').forEach(btn => {
+            btn.onclick = async () => {
+                if (confirm("Supprimer ?")) { await deleteDoc(doc(db, "contrats", btn.dataset.id)); loadContrats(); }
+            };
+        });
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) { window.location.href = "index.html"; return; }
+        currentUser = user;
+        document.getElementById('userEmail').innerText = user.email;
+        await loadVehicules();
+        await loadContrats();
+    });
+    document.getElementById('logoutBtn').onclick = () => signOut(auth);
+</script>
+</body>
+                                                            </html>

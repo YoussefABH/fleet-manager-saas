@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>ABDERCAR - Crédits</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Styles supplémentaires spécifiques aux crédits */
+        .credit-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border-left: 5px solid #1a3a6c;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .credit-header {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .credit-vehicule { font-weight: bold; font-size: 1rem; }
+        .credit-montant { color: #e74c3c; font-weight: bold; }
+        .credit-actions button { margin-left: 8px; background: none; border: none; cursor: pointer; font-size: 1.1rem; }
+        .echeances-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            min-width: 500px;
+        }
+        .echeances-table th, .echeances-table td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: center;
+            font-size: 0.8rem;
+        }
+        .echeances-table th { background: #f1f5f9; }
+        .paye { background-color: #d4edda !important; color: #155724; }
+        .impaye { background-color: #f8d7da !important; color: #721c24; }
+        .btn-toggle { padding: 4px 8px; font-size: 0.7rem; border-radius: 20px; cursor: pointer; border: none; }
+        .btn-toggle.btn-success { background: #28a745; color: white; }
+        .btn-toggle.btn-warning { background: #ffc107; color: black; }
+        .select-credit { max-width: 100%; margin-bottom: 1rem; }
+        .resume-credit {
+            background: #f8fafc;
+            padding: 10px;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .info-badge {
+            background: #1a3a6c;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            display: inline-block;
+        }
+        @media (max-width: 768px) {
+            .credit-header { flex-direction: column; align-items: flex-start; }
+            .credit-actions { align-self: flex-end; }
+            .resume-credit { flex-direction: column; gap: 5px; }
+            .info-badge { width: fit-content; }
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="main-header">
+        <div class="logo"><h1><i class="fas fa-car"></i> ABDERCAR</h1><p>Gestion de flotte</p></div>
+        <div class="user-actions"><span id="userEmail"></span><button id="logoutBtn" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Déconnexion</button></div>
+    </div>
+    <div class="main-nav">
+        <a href="dashboard.html" class="nav-link">📊 Dashboard</a>
+        <a href="vehicules.html" class="nav-link">🚗 Véhicules</a>
+        <a href="contrats.html" class="nav-link">📝 Contrats</a>
+        <a href="depenses.html" class="nav-link">💰 Dépenses</a>
+        <a href="credits.html" class="nav-link active">🏦 Crédits</a>
+        <a href="investisseurs.html" class="nav-link">👥 Investisseurs</a>
+        <a href="ia.html" class="nav-link">🤖 IA</a>
+        <a href="facturation.html" class="nav-link">📄 Facturation</a>
+        <a href="parc-auto.html" class="nav-link">📋 Parc Auto</a>
+    </div>
+    <div class="content">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <h2>🏦 Crédits véhicules</h2>
+            <button id="openCreditModalBtn" class="btn btn-primary"><i class="fas fa-plus"></i> Ajouter un crédit</button>
+        </div>
+
+        <div class="card select-credit">
+            <label for="creditSelect" class="form-label">Choisir un crédit :</label>
+            <select id="creditSelect" class="form-control"></select>
+        </div>
+
+        <div id="creditDisplay" class="credit-card" style="display: none;"></div>
+        <div id="syncStatus" class="status">✅ Prêt</div>
+    </div>
+</div>
+
+<!-- MODAL AJOUT / MODIFICATION -->
+<div id="creditModal" style="display: none; position: fixed; inset:0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; overflow-y: auto; padding: 20px;">
+    <div style="background: white; max-width: 500px; width: 100%; border-radius: 20px; padding: 1.5rem; margin: auto;">
+        <h3 id="creditModalTitle" class="mb-3">Ajouter un crédit</h3>
+        <input type="hidden" id="editCreditId" value="">
+        <div class="form-group"><label>Véhicule</label><select id="creditVehiculeId" class="form-control"></select></div>
+        <div class="form-group"><label>Montant emprunté (DH)</label><input id="creditMontant" type="number" class="form-control"></div>
+        <div class="form-group"><label>Taux annuel (%)</label><input id="creditTaux" type="number" step="0.1" class="form-control"></div>
+        <div class="form-group"><label>Durée (mois)</label><input id="creditDuree" type="number" class="form-control"></div>
+        <div class="form-group"><label>Mensualité (DH)</label><input id="creditMensualite" type="number" readonly class="form-control" style="background:#e9ecef;"></div>
+        <div class="form-group"><label>Date première échéance</label><input id="creditDateDebut" type="date" class="form-control"></div>
+        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+            <button id="closeCreditModal" class="btn btn-secondary">Annuler</button>
+            <button id="saveCredit" class="btn btn-primary">Enregistrer</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDE3BJsD1mp-vz9TEJSo4WtFcHe8sw6jJI",
+        authDomain: "gslv-c3875.firebaseapp.com",
+        projectId: "gslv-c3875",
+        storageBucket: "gslv-c3875.firebasestorage.app",
+        messagingSenderId: "971384785471",
+        appId: "1:971384785471:web:c881bc4db0595720ae068a"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    let currentUser = null;
+    let creditsList = [];
+    let vehiculesList = [];
+
+    const creditSelect = document.getElementById('creditSelect');
+    const creditDisplay = document.getElementById('creditDisplay');
+    const syncStatus = document.getElementById('syncStatus');
+
+    function showStatus(msg, isError = false) {
+        syncStatus.textContent = msg;
+        syncStatus.className = `status ${isError ? 'status-error' : 'status-success'}`;
+        setTimeout(() => {
+            if (syncStatus.textContent === msg) {
+                syncStatus.textContent = "✅ Prêt";
+                syncStatus.className = "status";
+            }
+        }, 3000);
+    }
+
+    async function loadVehicules() {
+        const q = query(collection(db, "vehicules"), where("userId", "==", currentUser.uid));
+        const snap = await getDocs(q);
+        vehiculesList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const select = document.getElementById('creditVehiculeId');
+        select.innerHTML = '<option value="">Sélectionner un véhicule</option>';
+        vehiculesList.forEach(v => {
+            select.innerHTML += `<option value="${v.id}">${v.marque} ${v.modele} - ${v.immatriculation}</option>`;
+        });
+    }
+
+    async function loadCredits() {
+        const q = query(collection(db, "credits"), where("userId", "==", currentUser.uid));
+        const snapshot = await getDocs(q);
+        creditsList = [];
+        creditSelect.innerHTML = '<option value="">-- Sélectionnez un crédit --</option>';
+        for (const docSnap of snapshot.docs) {
+            const credit = docSnap.data();
+            const vehDoc = await getDoc(doc(db, "vehicules", credit.vehiculeId));
+            let vehiculeNom = "Véhicule inconnu";
+            if (vehDoc.exists()) {
+                vehiculeNom = `${vehDoc.data().marque} ${vehDoc.data().modele} (${vehDoc.data().immatriculation})`;
+            }
+            creditsList.push({ id: docSnap.id, vehiculeNom, creditData: credit });
+            const option = document.createElement('option');
+            option.value = docSnap.id;
+            option.textContent = `${vehiculeNom} - ${credit.montantTotal} DH (${credit.dureeMois} mois)`;
+            creditSelect.appendChild(option);
+        }
+        if (creditsList.length === 0) {
+            creditSelect.innerHTML = '<option value="">Aucun crédit enregistré</option>';
+            creditDisplay.style.display = 'none';
+        }
+    }
+
+    function afficherCredit(creditId) {
+        const selected = creditsList.find(c => c.id === creditId);
+        if (!selected) return;
+        const credit = selected.creditData;
+        const vehiculeNom = selected.vehiculeNom;
+        const echeances = credit.echeances || [];
+        const totalPaye = echeances.filter(e => e.paye).reduce((s, e) => s + e.montant, 0);
+        const reste = credit.montantTotal - totalPaye;
+        const nbPayees = echeances.filter(e => e.paye).length;
+        const nbTotal = echeances.length;
+        
+        let echeancesHtml = '<div class="table-container"><table class="echeances-table"><thead><tr><th>N°</th><th>Date échéance</th><th>Montant (DH)</th><th>Statut</th><th>Action</th></tr></thead><tbody>';
+        echeances.forEach((e, idx) => {
+            const dateStr = e.date?.toDate ? e.date.toDate().toLocaleDateString() : new Date(e.date).toLocaleDateString();
+            const statusClass = e.paye ? 'paye' : 'impaye';
+            const statusText = e.paye ? 'Payé' : 'Impayé';
+            echeancesHtml += `
+                <tr class="${statusClass}">
+                    <td>${e.numero}</td>
+                    <td>${dateStr}</td>
+                    <td>${e.montant.toFixed(2)} DH</td>
+                    <td>${statusText}</td>
+                    <td><button class="btn-toggle ${e.paye ? 'btn-warning' : 'btn-success'}" data-credit-id="${creditId}" data-ech-idx="${idx}">${e.paye ? 'Annuler' : 'Marquer payé'}</button></td>
+                </tr>
+            `;
+        });
+        echeancesHtml += '</tbody></table></div>';
+        
+        creditDisplay.innerHTML = `
+            <div class="credit-header">
+                <div class="credit-vehicule">🚗 ${vehiculeNom}</div>
+                <div class="credit-montant">💰 ${credit.montantTotal.toLocaleString()} DH</div>
+                <div class="credit-actions">
+                    <button id="editCreditBtn" title="Modifier"><i class="fas fa-edit" style="color:#1a3a6c;"></i></button>
+                    <button id="deleteCreditBtn" title="Supprimer"><i class="fas fa-trash" style="color:#e74c3c;"></i></button>
+                </div>
+            </div>
+            <div class="resume-credit">
+                <span class="info-badge">Mensualité: ${credit.mensualite.toFixed(2)} DH</span>
+                <span class="info-badge">Taux: ${credit.taux}%</span>
+                <span class="info-badge">Durée: ${credit.dureeMois} mois</span>
+                <span class="info-badge">Payé: ${nbPayees}/${nbTotal}</span>
+                <span class="info-badge">Reste: ${reste.toFixed(2)} DH</span>
+            </div>
+            ${echeancesHtml}
+        `;
+        creditDisplay.style.display = 'block';
+        
+        // Événements sur les boutons toggle
+        document.querySelectorAll('.btn-toggle').forEach(btn => {
+            btn.onclick = async () => {
+                const cId = btn.dataset.creditId;
+                const idx = parseInt(btn.dataset.echIdx);
+                const creditRef = doc(db, "credits", cId);
+                const creditSnap = await getDoc(creditRef);
+                if (creditSnap.exists()) {
+                    const creditData = creditSnap.data();
+                    creditData.echeances[idx].paye = !creditData.echeances[idx].paye;
+                    await updateDoc(creditRef, { echeances: creditData.echeances });
+                    showStatus("Paiement mis à jour");
+                    await loadCredits();
+                    creditSelect.value = cId;
+                    afficherCredit(cId);
+                }
+            };
+        });
+        
+        document.getElementById('editCreditBtn').onclick = () => ouvrirModalModification(creditId);
+        document.getElementById('deleteCreditBtn').onclick = () => supprimerCredit(creditId);
+    }
+
+    function ouvrirModalModification(creditId) {
+        const selected = creditsList.find(c => c.id === creditId);
+        if (!selected) return;
+        const credit = selected.creditData;
+        document.getElementById('editCreditId').value = creditId;
+        document.getElementById('creditModalTitle').innerText = 'Modifier le crédit';
+        document.getElementById('creditVehiculeId').value = credit.vehiculeId;
+        document.getElementById('creditMontant').value = credit.montantTotal;
+        document.getElementById('creditTaux').value = credit.taux;
+        document.getElementById('creditDuree').value = credit.dureeMois;
+        document.getElementById('creditMensualite').value = credit.mensualite;
+        const dateDebut = credit.dateDebut?.toDate ? credit.dateDebut.toDate().toISOString().split('T')[0] : '';
+        document.getElementById('creditDateDebut').value = dateDebut;
+        document.getElementById('creditModal').style.display = 'flex';
+    }
+
+    async function supprimerCredit(creditId) {
+        if (confirm("Supprimer définitivement ce crédit ? Cette action est irréversible.")) {
+            try {
+                await deleteDoc(doc(db, "credits", creditId));
+                showStatus("Crédit supprimé");
+                await loadCredits();
+                if (creditsList.length > 0) {
+                    creditSelect.value = creditsList[0].id;
+                    afficherCredit(creditsList[0].id);
+                } else {
+                    creditDisplay.style.display = 'none';
+                }
+            } catch (error) {
+                showStatus("Erreur suppression : " + error.message, true);
+            }
+        }
+    }
+
+    creditSelect.addEventListener('change', () => {
+        const creditId = creditSelect.value;
+        if (creditId) afficherCredit(creditId);
+        else creditDisplay.style.display = 'none';
+    });
+
+    // Calcul mensualité
+    function calculerMensualite(montant, tauxAnnuel, dureeMois) {
+        if (tauxAnnuel === 0) return montant / dureeMois;
+        const tauxMensuel = tauxAnnuel / 100 / 12;
+        return montant * (tauxMensuel * Math.pow(1 + tauxMensuel, dureeMois)) / (Math.pow(1 + tauxMensuel, dureeMois) - 1);
+    }
+    function updateMensualite() {
+        const montant = Number(document.getElementById('creditMontant').value) || 0;
+        const taux = Number(document.getElementById('creditTaux').value) || 0;
+        const duree = Number(document.getElementById('creditDuree').value) || 0;
+        if (montant && duree) {
+            const mens = calculerMensualite(montant, taux, duree);
+            document.getElementById('creditMensualite').value = mens.toFixed(2);
+        } else document.getElementById('creditMensualite').value = '';
+    }
+    document.getElementById('creditMontant').addEventListener('input', updateMensualite);
+    document.getElementById('creditTaux').addEventListener('input', updateMensualite);
+    document.getElementById('creditDuree').addEventListener('input', updateMensualite);
+
+    document.getElementById('openCreditModalBtn').onclick = () => {
+        if (vehiculesList.length === 0) { alert("Ajoutez d'abord un véhicule."); return; }
+        document.getElementById('editCreditId').value = '';
+        document.getElementById('creditModalTitle').innerText = 'Ajouter un crédit';
+        document.getElementById('creditVehiculeId').value = '';
+        document.getElementById('creditMontant').value = '';
+        document.getElementById('creditTaux').value = '';
+        document.getElementById('creditDuree').value = '';
+        document.getElementById('creditMensualite').value = '';
+        document.getElementById('creditDateDebut').value = '';
+        document.getElementById('creditModal').style.display = 'flex';
+    };
+    document.getElementById('closeCreditModal').onclick = () => document.getElementById('creditModal').style.display = 'none';
+    document.getElementById('saveCredit').onclick = async () => {
+        const editId = document.getElementById('editCreditId').value;
+        const vehiculeId = document.getElementById('creditVehiculeId').value;
+        const montant = Number(document.getElementById('creditMontant').value);
+        const taux = Number(document.getElementById('creditTaux').value);
+        const duree = Number(document.getElementById('creditDuree').value);
+        const mensualite = Number(document.getElementById('creditMensualite').value);
+        const dateDebut = document.getElementById('creditDateDebut').value;
+        if (!vehiculeId || !montant || !duree || !dateDebut) { alert("Champs requis"); return; }
+        if (editId) {
+            const creditRef = doc(db, "credits", editId);
+            const oldDoc = await getDoc(creditRef);
+            if (!oldDoc.exists()) { alert("Crédit introuvable"); return; }
+            const oldEcheances = oldDoc.data().echeances || [];
+            let nouvellesEcheances = oldEcheances;
+            if (Math.abs(oldDoc.data().mensualite - mensualite) > 0.01 || oldDoc.data().dureeMois !== duree) {
+                nouvellesEcheances = [];
+                let dateCourante = new Date(dateDebut);
+                for (let i = 1; i <= duree; i++) {
+                    const existante = oldEcheances[i-1];
+                    nouvellesEcheances.push({
+                        numero: i,
+                        date: new Date(dateCourante),
+                        montant: mensualite,
+                        paye: existante ? existante.paye : false
+                    });
+                    dateCourante.setMonth(dateCourante.getMonth() + 1);
+                }
+            }
+            await updateDoc(creditRef, {
+                vehiculeId, montantTotal: montant, taux, dureeMois: duree, mensualite,
+                dateDebut: new Date(dateDebut), echeances: nouvellesEcheances, updatedAt: new Date()
+            });
+            showStatus("Crédit modifié");
+        } else {
+            const echeances = [];
+            let dateCourante = new Date(dateDebut);
+            for (let i = 1; i <= duree; i++) {
+                echeances.push({ numero: i, date: new Date(dateCourante), montant: mensualite, paye: false });
+                dateCourante.setMonth(dateCourante.getMonth() + 1);
+            }
+            await addDoc(collection(db, "credits"), {
+                vehiculeId, montantTotal: montant, taux, dureeMois: duree, mensualite,
+                dateDebut: new Date(dateDebut), echeances, userId: currentUser.uid,
+                createdAt: new Date(), updatedAt: new Date()
+            });
+            showStatus("Crédit ajouté");
+        }
+        document.getElementById('creditModal').style.display = 'none';
+        await loadCredits();
+        if (creditsList.length > 0) {
+            creditSelect.value = creditsList[0].id;
+            afficherCredit(creditsList[0].id);
+        }
+    };
+
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) { window.location.href = "index.html"; return; }
+        currentUser = user;
+        document.getElementById('userEmail').innerText = user.email;
+        await loadVehicules();
+        await loadCredits();
+        if (creditsList.length > 0) {
+            creditSelect.value = creditsList[0].id;
+            afficherCredit(creditsList[0].id);
+        }
+    });
+    document.getElementById('logoutBtn').onclick = () => signOut(auth);
+</script>
+</body>
+    </html>
