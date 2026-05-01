@@ -28,8 +28,8 @@
     <p id="investorName" style="font-size: 18px; color: #666;"></p>
     <div class="flex">
         <div class="stat"><h3 id="totalInvest">0 DH</h3><div>Total investi</div></div>
+        <div class="stat"><h3 id="totalProfit">0 DH</h3><div>Bénéfice perçu</div></div>
         <div class="stat"><h3 id="totalDeals">0</h3><div>Nombre de deals</div></div>
-        <div class="stat"><h3 id="avgDeals">0 DH</h3><div>Montant moyen</div></div>
         <div class="stat"><h3 id="avgDuration">0 j</h3><div>Durée moyenne</div></div>
     </div>
     <div class="filter-section">
@@ -40,8 +40,8 @@
         <button class="filter-btn" data-filter="En attente">En attente</button>
     </div>
     <div class="charts-container">
-        <div class="chart-box"><h3>Répartition par Deal</h3><canvas id="pieChart"></canvas></div>
-        <div class="chart-box"><h3>Montants Investis</h3><canvas id="barChart"></canvas></div>
+        <div class="chart-box"><h3>Répartition des investissements</h3><canvas id="pieChart"></canvas></div>
+        <div class="chart-box"><h3>Montants investis par deal</h3><canvas id="barChart"></canvas></div>
     </div>
     <h2>📋 Mes Deals</h2>
     <div id="dealsList" class="deals-list"></div>
@@ -74,31 +74,53 @@
     const dealsSnap = await getDocs(query(collection(db, "affaires"), where("investisseurId", "==", investorId)));
     let allDeals = [];
     let totalInvest = 0;
+    let totalProfitReceived = 0;
+
+    // D'abord charger tous les véhicules pour connaître les prix d'achat
+    const vehiclesSnap = await getDocs(collection(db, "vehicules"));
+    const vehiclesMap = {};
+    vehiclesSnap.forEach(v => { vehiclesMap[v.id] = v.data(); });
 
     for (const dealDoc of dealsSnap.docs) {
         const deal = dealDoc.data();
-        let vehiclesNames = '', costAchat = 0;
+        let vehiclesNames = '';
+        let totalBuyPrice = 0;
         for (let vid of deal.vehicules) {
-            const vDoc = await getDoc(doc(db, "vehicules", vid));
-            if (vDoc.exists()) { let v = vDoc.data(); vehiclesNames += `${v.marque} ${v.modele}, `; costAchat += v.prixAchat || 0; }
+            const v = vehiclesMap[vid];
+            if (v) {
+                vehiclesNames += `${v.marque} ${v.modele}, `;
+                totalBuyPrice += v.prixAchat || 0;
+            }
         }
         vehiclesNames = vehiclesNames.slice(0, -2);
-        let investPart = costAchat * (deal.pourcentageAchat / 100);
+        let investPart = totalBuyPrice * (deal.pourcentageAchat / 100);
         totalInvest += investPart;
+        let profitShared = 0;
+        if (deal.statut === 'Terminé' && deal.prixVente) {
+            let benefit = deal.prixVente - totalBuyPrice;
+            profitShared = benefit > 0 ? benefit * (deal.pourcentageBenefice / 100) : 0;
+            totalProfitReceived += profitShared;
+        }
         let startDate = deal.dateDebut?.toDate ? deal.dateDebut.toDate() : new Date(deal.dateDebut);
         let endDate = deal.dateFin?.toDate ? deal.dateFin.toDate() : new Date(deal.dateFin);
         let duration = startDate && endDate ? Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) : 0;
         allDeals.push({
-            id: dealDoc.id, vehicules: vehiclesNames, investPart: investPart,
-            pourcentageAchat: deal.pourcentageAchat, pourcentageBenefice: deal.pourcentageBenefice,
+            id: dealDoc.id,
+            vehicles: vehiclesNames,
+            investPart: investPart,
+            pourcentageAchat: deal.pourcentageAchat,
+            pourcentageBenefice: deal.pourcentageBenefice,
             dateDebut: startDate ? startDate.toLocaleDateString() : '?',
             dateFin: endDate ? endDate.toLocaleDateString() : '?',
-            statut: deal.statut, duration: duration
+            statut: deal.statut,
+            duration: duration,
+            prixVente: deal.prixVente,
+            profitShared: profitShared
         });
     }
     document.getElementById('totalInvest').innerHTML = totalInvest.toFixed(2) + " DH";
+    document.getElementById('totalProfit').innerHTML = totalProfitReceived.toFixed(2) + " DH";
     document.getElementById('totalDeals').innerHTML = allDeals.length;
-    document.getElementById('avgDeals').innerHTML = allDeals.length ? (totalInvest / allDeals.length).toFixed(2) + " DH" : "0 DH";
     const avgDuration = allDeals.length ? Math.floor(allDeals.reduce((a,b) => a + b.duration, 0) / allDeals.length) : 0;
     document.getElementById('avgDuration').innerHTML = avgDuration + " j";
 
@@ -123,11 +145,15 @@
         if (!filtered.length) { container.innerHTML = '<p style="text-align:center; color:#999;">Aucun deal trouvé</p>'; return; }
         filtered.forEach(deal => {
             const statusColor = deal.statut === 'Actif' ? '#28a745' : deal.statut === 'Terminé' ? '#6c757d' : '#ffc107';
+            let profitHtml = '';
+            if (deal.statut === 'Terminé' && deal.prixVente) {
+                profitHtml = `<br><strong>💰 Bénéfice perçu (part investisseur) :</strong> ${deal.profitShared.toFixed(2)} DH`;
+            }
             container.innerHTML += `
                 <div class="card">
-                    <strong>🚗 Véhicules :</strong> ${deal.vehicules}<br>
+                    <strong>🚗 Véhicules :</strong> ${deal.vehicles}<br>
                     <strong>💰 Part investie :</strong> ${deal.pourcentageAchat}% → <strong>${deal.investPart.toFixed(2)} DH</strong><br>
-                    <strong>📊 Part sur bénéfice :</strong> ${deal.pourcentageBenefice}%<br>
+                    <strong>📊 Part sur bénéfice :</strong> ${deal.pourcentageBenefice}%${profitHtml}<br>
                     <strong>📅 Période :</strong> ${deal.dateDebut} → ${deal.dateFin} (${deal.duration} jours)<br>
                     <strong>✅ Statut :</strong> <span style="padding: 5px 10px; border-radius: 5px; background: ${statusColor}; color: white;">${deal.statut}</span>
                 </div>`;
