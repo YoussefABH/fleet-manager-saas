@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>ABDERCAR - Tableau de bord</title>
+    <title>ABDERCAR - Tableau de bord global</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Styles complémentaires */
         .kpi-card {
             background: white;
             border-radius: 20px;
@@ -43,6 +42,7 @@
             margin-bottom: 1.5rem;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
+        .small-text { font-size: 0.8rem; color: #666; }
         @media (max-width: 768px) {
             .kpi-value { font-size: 1.2rem; }
             .filters-bar { flex-direction: column; }
@@ -67,7 +67,7 @@
         <a href="parc-auto.html" class="nav-link">📋 Parc Auto</a>
     </div>
     <div class="content">
-        <h2>📊 Tableau de bord stratégique</h2>
+        <h2>📊 Tableau de bord global</h2>
 
         <!-- Filtres -->
         <div class="filters-bar">
@@ -81,7 +81,7 @@
                 </select>
             </div>
             <div class="filter-group">
-                <label>Investisseur</label>
+                <label>Investisseur (affaires)</label>
                 <select id="investorFilter" class="form-control">
                     <option value="all">Tous</option>
                 </select>
@@ -91,22 +91,34 @@
             </div>
         </div>
 
-        <!-- KPIs -->
+        <!-- KPI généraux (location + dépenses + crédits + investisseurs) -->
         <div class="grid-2" style="margin-bottom: 1.5rem;">
-            <div class="kpi-card"><div class="kpi-value" id="kpiTotalInvest">0 DH</div><div class="kpi-label">Total investi par investisseurs</div></div>
-            <div class="kpi-card"><div class="kpi-value" id="kpiTotalProfit">0 DH</div><div class="kpi-label">Bénéfice net (réalisé)</div></div>
-            <div class="kpi-card"><div class="kpi-value" id="kpiNbDeals">0</div><div class="kpi-label">Affaires conclues</div></div>
-            <div class="kpi-card"><div class="kpi-value" id="kpiRoi">0%</div><div class="kpi-label">Rendement global</div></div>
+            <div class="kpi-card"><div class="kpi-value" id="kpiRevenus">0 DH</div><div class="kpi-label">Revenus (locations)</div></div>
+            <div class="kpi-card"><div class="kpi-value" id="kpiDepenses">0 DH</div><div class="kpi-label">Dépenses totales</div></div>
+            <div class="kpi-card"><div class="kpi-value" id="kpiBeneficeLocation">0 DH</div><div class="kpi-label">Bénéfice location</div></div>
+            <div class="kpi-card"><div class="kpi-value" id="kpiCreditRestant">0 DH</div><div class="kpi-label">Crédits restants</div></div>
+            <div class="kpi-card"><div class="kpi-value" id="kpiTauxOccupation">0%</div><div class="kpi-label">Taux d'occupation</div></div>
+            <div class="kpi-card"><div class="kpi-value" id="kpiInvestPart">0 DH</div><div class="kpi-label">Invest. investisseurs</div></div>
+            <div class="kpi-card"><div class="kpi-value" id="kpiProfitInvest">0 DH</div><div class="kpi-label">Bénéfice investisseurs</div></div>
+            <div class="kpi-card"><div class="kpi-value" id="kpiROIGlobal">0%</div><div class="kpi-label">ROI global (société)</div></div>
         </div>
 
         <!-- Graphiques -->
         <div class="chart-container">
-            <h3>💰 Investissement par investisseur</h3>
+            <h3>📈 Évolution des revenus et dépenses</h3>
+            <canvas id="trendChart" height="200"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3>🚗 Top 5 véhicules les plus rentables (bénéfice location)</h3>
+            <canvas id="topVehiculesChart" height="200"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3>🏢 Investissement par investisseur</h3>
             <canvas id="investByInvestorChart" height="200"></canvas>
         </div>
         <div class="chart-container">
-            <h3>📈 Bénéfices par affaire (clôturées)</h3>
-            <canvas id="profitByDealChart" height="200"></canvas>
+            <h3>📆 Taux d'occupation des véhicules</h3>
+            <canvas id="occupationChart" height="200"></canvas>
         </div>
 
         <!-- Suggestions stratégiques -->
@@ -136,207 +148,263 @@
     const db = getFirestore(app);
 
     let currentUser = null;
-    let allDeals = [];
-    let allInvestors = [];
-    let vehiclesMap = new Map();
+    let allContrats = [];
+    let allDepenses = [];
+    let allCredits = [];
+    let allVehicules = [];
+    let allAffaires = [];
+    let allInvestisseurs = [];
 
-    // Éléments DOM
+    // Filtres
     const periodFilter = document.getElementById('periodFilter');
     const investorFilter = document.getElementById('investorFilter');
     const refreshBtn = document.getElementById('refreshBtn');
-    const userEmailSpan = document.getElementById('userEmail');
 
-    async function loadData() {
+    function getDateFilter(dateObj, period) {
+        if (!dateObj) return false;
+        const d = dateObj.toDate ? dateObj.toDate() : new Date(dateObj);
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth();
+        if (period === 'all') return true;
+        if (period === 'month') return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+        if (period === 'year') return d.getFullYear() === currentYear;
+        if (period === 'last6') {
+            const sixMonthsAgo = new Date(); sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+            return d >= sixMonthsAgo;
+        }
+        return true;
+    }
+
+    async function loadAllData() {
         if (!currentUser) return;
-        // Charger tous les véhicules pour calculer les prix d'achat
+
+        // Charger les véhicules
         const vehiclesSnap = await getDocs(collection(db, "vehicules"));
-        vehiclesMap.clear();
-        vehiclesSnap.forEach(doc => { vehiclesMap.set(doc.id, doc.data()); });
+        allVehicules = vehiclesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         
-        // Charger investisseurs (tous, car les affaires peuvent être liées à des investisseurs existants)
-        const investorsSnap = await getDocs(collection(db, "investisseurs"));
-        allInvestors = investorsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        // Charger les contrats (revenus)
+        const contratsSnap = await getDocs(collection(db, "contrats"));
+        allContrats = contratsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         
-        // Charger affaires
-        const dealsSnap = await getDocs(collection(db, "affaires"));
-        allDeals = [];
-        for (const docSnap of dealsSnap.docs) {
-            const deal = docSnap.data();
-            const investor = allInvestors.find(i => i.id === deal.investisseurId);
+        // Charger les dépenses
+        const depensesSnap = await getDocs(collection(db, "depenses"));
+        allDepenses = depensesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        
+        // Charger les crédits
+        const creditsSnap = await getDocs(collection(db, "credits"));
+        allCredits = creditsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        
+        // Charger les investisseurs et affaires
+        const investisseursSnap = await getDocs(collection(db, "investisseurs"));
+        allInvestisseurs = investisseursSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        
+        const affairesSnap = await getDocs(collection(db, "affaires"));
+        allAffaires = [];
+        for (const doc of affairesSnap.docs) {
+            const aff = doc.data();
+            // Calculer le prix d'achat total des véhicules concernés
             let totalBuyPrice = 0;
-            if (deal.vehicules) {
-                deal.vehicules.forEach(vid => {
-                    const v = vehiclesMap.get(vid);
+            if (aff.vehicules) {
+                aff.vehicules.forEach(vid => {
+                    const v = allVehicules.find(vv => vv.id === vid);
                     if (v) totalBuyPrice += v.prixAchat || 0;
                 });
             }
-            const investAmount = totalBuyPrice * (deal.pourcentageAchat / 100);
+            const investAmount = totalBuyPrice * (aff.pourcentageAchat / 100);
             let profit = 0;
-            if (deal.statut === 'Terminé' && deal.prixVente) {
-                const benefit = deal.prixVente - totalBuyPrice;
-                profit = benefit > 0 ? benefit * (deal.pourcentageBenefice / 100) : 0;
+            if (aff.statut === 'Terminé' && aff.prixVente) {
+                const benefit = aff.prixVente - totalBuyPrice;
+                profit = benefit > 0 ? benefit * (aff.pourcentageBenefice / 100) : 0;
             }
-            allDeals.push({
-                id: docSnap.id,
-                ...deal,
-                investorName: investor ? investor.nom : "Inconnu",
+            const investor = allInvestisseurs.find(i => i.id === aff.investisseurId);
+            allAffaires.push({
+                ...aff,
                 totalBuyPrice,
                 investAmount,
                 profitRealise: profit,
-                dateDebutObj: deal.dateDebut?.toDate ? deal.dateDebut.toDate() : new Date(deal.dateDebut),
-                dateFinObj: deal.dateFin?.toDate ? deal.dateFin.toDate() : new Date(deal.dateFin)
+                investorName: investor ? investor.nom : "Inconnu",
+                dateDebutObj: aff.dateDebut?.toDate ? aff.dateDebut.toDate() : new Date(aff.dateDebut),
+                dateFinObj: aff.dateFin?.toDate ? aff.dateFin.toDate() : new Date(aff.dateFin)
             });
         }
         
         // Mettre à jour le filtre investisseur
         const investorSelect = document.getElementById('investorFilter');
         investorSelect.innerHTML = '<option value="all">Tous les investisseurs</option>';
-        allInvestors.forEach(inv => {
+        allInvestisseurs.forEach(inv => {
             investorSelect.innerHTML += `<option value="${inv.id}">${inv.nom}</option>`;
         });
         
         applyFiltersAndRender();
     }
 
-    function filterDealsByPeriod(deals, period) {
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth();
-        if (period === 'all') return deals;
-        if (period === 'month') {
-            return deals.filter(d => d.dateDebutObj.getFullYear() === currentYear && d.dateDebutObj.getMonth() === currentMonth);
-        }
-        if (period === 'year') {
-            return deals.filter(d => d.dateDebutObj.getFullYear() === currentYear);
-        }
-        if (period === 'last6') {
-            const sixMonthsAgo = new Date();
-            sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-            return deals.filter(d => d.dateDebutObj >= sixMonthsAgo);
-        }
-        return deals;
-    }
-
-    async function applyFiltersAndRender() {
+    function applyFiltersAndRender() {
         const period = periodFilter.value;
         const investorId = investorFilter.value;
         
-        let filtered = [...allDeals];
-        filtered = filterDealsByPeriod(filtered, period);
+        // Filtrer contrats par période
+        let filtredContrats = allContrats.filter(c => getDateFilter(c.debut, period));
+        let filtredDepenses = allDepenses.filter(d => getDateFilter(d.date, period));
+        let filtredAffaires = allAffaires;
         if (investorId !== 'all') {
-            filtered = filtered.filter(d => d.investisseurId === investorId);
+            filtredAffaires = filtredAffaires.filter(a => a.investisseurId === investorId);
         }
+        filtredAffaires = filtredAffaires.filter(a => getDateFilter(a.dateDebut, period));
         
-        // Calcul des KPIs
-        const totalInvest = filtered.reduce((sum, d) => sum + d.investAmount, 0);
-        const totalProfit = filtered.reduce((sum, d) => sum + d.profitRealise, 0);
-        const nbDeals = filtered.length;
-        const roi = totalInvest > 0 ? (totalProfit / totalInvest * 100).toFixed(1) : 0;
+        // Calcul des revenus et dépenses
+        const totalRevenus = filtredContrats.reduce((sum, c) => sum + (c.montant || 0), 0);
+        const totalDepenses = filtredDepenses.reduce((sum, d) => sum + (d.montant || 0), 0);
+        const beneficeLocation = totalRevenus - totalDepenses;
         
-        document.getElementById('kpiTotalInvest').innerText = totalInvest.toFixed(2) + " DH";
-        document.getElementById('kpiTotalProfit').innerText = totalProfit.toFixed(2) + " DH";
-        document.getElementById('kpiNbDeals').innerText = nbDeals;
-        document.getElementById('kpiRoi').innerText = roi + "%";
-        
-        // Graphique investissement par investisseur (camembert)
-        const investByInvestor = {};
-        filtered.forEach(deal => {
-            const name = deal.investorName;
-            investByInvestor[name] = (investByInvestor[name] || 0) + deal.investAmount;
+        // Crédits restants (total restant à payer)
+        let totalCreditRestant = 0;
+        allCredits.forEach(credit => {
+            const echeances = credit.echeances || [];
+            const reste = echeances.filter(e => !e.paye).reduce((s, e) => s + (e.montant || 0), 0);
+            totalCreditRestant += reste;
         });
+        
+        // Taux d'occupation : (nombre de jours loués / (nombre de véhicules * jours dans la période))
+        let totalJoursLoues = 0;
+        filtredContrats.forEach(c => {
+            const debut = c.debut?.toDate ? c.debut.toDate() : new Date(c.debut);
+            const fin = c.fin?.toDate ? c.fin.toDate() : new Date(c.fin);
+            const jours = Math.max(0, Math.ceil((fin - debut) / (1000*60*60*24)));
+            totalJoursLoues += jours;
+        });
+        let totalJoursPossibles = 0;
+        const now = new Date();
+        let daysInPeriod = 365;
+        if (period === 'month') daysInPeriod = 30;
+        else if (period === 'last6') daysInPeriod = 180;
+        else if (period === 'year') daysInPeriod = 365;
+        else if (period === 'all') daysInPeriod = 365;
+        totalJoursPossibles = allVehicules.length * daysInPeriod;
+        const tauxOccupation = totalJoursPossibles > 0 ? (totalJoursLoues / totalJoursPossibles * 100) : 0;
+        
+        // Investissements et profits investisseurs
+        const totalInvest = filtredAffaires.reduce((sum, a) => sum + a.investAmount, 0);
+        const totalProfitInvest = filtredAffaires.reduce((sum, a) => sum + a.profitRealise, 0);
+        const roiGlobal = totalInvest > 0 ? (totalProfitInvest / totalInvest * 100) : 0;
+        
+        // Mettre à jour les KPI
+        document.getElementById('kpiRevenus').innerText = totalRevenus.toFixed(2) + " DH";
+        document.getElementById('kpiDepenses').innerText = totalDepenses.toFixed(2) + " DH";
+        document.getElementById('kpiBeneficeLocation').innerText = beneficeLocation.toFixed(2) + " DH";
+        document.getElementById('kpiCreditRestant').innerText = totalCreditRestant.toFixed(2) + " DH";
+        document.getElementById('kpiTauxOccupation').innerText = tauxOccupation.toFixed(1) + "%";
+        document.getElementById('kpiInvestPart').innerText = totalInvest.toFixed(2) + " DH";
+        document.getElementById('kpiProfitInvest').innerText = totalProfitInvest.toFixed(2) + " DH";
+        document.getElementById('kpiROIGlobal').innerText = roiGlobal.toFixed(1) + "%";
+        
+        // Graphique tendance revenus/dépenses (par mois sur la période)
+        const monthsMap = new Map();
+        const allDates = [...filtredContrats, ...filtredDepenses];
+        allDates.forEach(item => {
+            let date = item.debut?.toDate ? item.debut.toDate() : (item.date?.toDate ? item.date.toDate() : new Date(item.debut || item.date));
+            if (!isNaN(date)) {
+                const key = `${date.getFullYear()}-${date.getMonth()+1}`;
+                if (!monthsMap.has(key)) monthsMap.set(key, { revenus: 0, depenses: 0 });
+                if (item.montant !== undefined) {
+                    if (item.debut) monthsMap.get(key).revenus += item.montant;
+                    if (item.date) monthsMap.get(key).depenses += item.montant;
+                }
+            }
+        });
+        const sortedMonths = Array.from(monthsMap.keys()).sort();
+        const revenusData = sortedMonths.map(m => monthsMap.get(m).revenus);
+        const depensesData = sortedMonths.map(m => monthsMap.get(m).depenses);
+        
+        const ctxTrend = document.getElementById('trendChart').getContext('2d');
+        if (window.trendChart) window.trendChart.destroy();
+        window.trendChart = new Chart(ctxTrend, {
+            type: 'line',
+            data: { labels: sortedMonths.map(m => m.replace('-', '/')), datasets: [{ label: 'Revenus', data: revenusData, borderColor: '#28a745', fill: false }, { label: 'Dépenses', data: depensesData, borderColor: '#e74c3c', fill: false }] },
+            options: { responsive: true, plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.toFixed(2)} DH` } } } }
+        });
+        
+        // Top 5 véhicules les plus rentables (bénéfice location)
+        const vehicleProfit = new Map();
+        filtredContrats.forEach(c => {
+            const profit = c.montant;
+            if (vehicleProfit.has(c.vehiculeId)) vehicleProfit.set(c.vehiculeId, vehicleProfit.get(c.vehiculeId) + profit);
+            else vehicleProfit.set(c.vehiculeId, profit);
+        });
+        const topVehicles = Array.from(vehicleProfit.entries()).sort((a,b) => b[1] - a[1]).slice(0,5);
+        const topVehicleNames = topVehicles.map(([id, _]) => { const v = allVehicules.find(vv => vv.id === id); return v ? `${v.marque} ${v.modele}` : id; });
+        const topVehicleProfits = topVehicles.map(([_, profit]) => profit);
+        const ctxTop = document.getElementById('topVehiculesChart').getContext('2d');
+        if (window.topChart) window.topChart.destroy();
+        window.topChart = new Chart(ctxTop, { type: 'bar', data: { labels: topVehicleNames, datasets: [{ label: 'Bénéfice (DH)', data: topVehicleProfits, backgroundColor: '#1a3a6c' }] }, options: { responsive: true } });
+        
+        // Investissement par investisseur (camembert)
+        const investByInvestor = {};
+        filtredAffaires.forEach(a => { investByInvestor[a.investorName] = (investByInvestor[a.investorName] || 0) + a.investAmount; });
         const labelsInvest = Object.keys(investByInvestor);
         const dataInvest = labelsInvest.map(l => investByInvestor[l]);
-        
-        const ctx1 = document.getElementById('investByInvestorChart').getContext('2d');
+        const ctxInvest = document.getElementById('investByInvestorChart').getContext('2d');
         if (window.investChart) window.investChart.destroy();
-        window.investChart = new Chart(ctx1, {
-            type: 'pie',
-            data: { labels: labelsInvest, datasets: [{ data: dataInvest, backgroundColor: ['#1a3a6c','#2c5282','#e74c3c','#28a745','#ffc107','#17a2b8'] }] },
-            options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
-        });
+        window.investChart = new Chart(ctxInvest, { type: 'pie', data: { labels: labelsInvest, datasets: [{ data: dataInvest, backgroundColor: ['#1a3a6c','#2c5282','#e74c3c','#28a745','#ffc107'] }] }, options: { responsive: true, plugins: { legend: { position: 'bottom' } } } });
         
-        // Graphique bénéfices par affaire (seulement celles terminées avec profit)
-        const profitableDeals = filtered.filter(d => d.statut === 'Terminé' && d.profitRealise > 0);
-        const dealLabels = profitableDeals.map((_, idx) => `Deal ${idx+1}`);
-        const dealProfits = profitableDeals.map(d => d.profitRealise);
-        const ctx2 = document.getElementById('profitByDealChart').getContext('2d');
-        if (window.profitChart) window.profitChart.destroy();
-        window.profitChart = new Chart(ctx2, {
-            type: 'bar',
-            data: { labels: dealLabels, datasets: [{ label: 'Bénéfice (DH)', data: dealProfits, backgroundColor: '#2c5282' }] },
-            options: { responsive: true, scales: { y: { beginAtZero: true, title: { display: true, text: 'DH' } } } }
-        });
+        // Taux d'occupation par véhicule (barres)
+        const occupationByVehicle = [];
+        for (const v of allVehicules) {
+            let joursLoues = 0;
+            filtredContrats.forEach(c => {
+                if (c.vehiculeId === v.id) {
+                    const debut = c.debut?.toDate ? c.debut.toDate() : new Date(c.debut);
+                    const fin = c.fin?.toDate ? c.fin.toDate() : new Date(c.fin);
+                    joursLoues += Math.max(0, Math.ceil((fin - debut) / (1000*60*60*24)));
+                }
+            });
+            const occupation = (joursLoues / daysInPeriod * 100).toFixed(1);
+            occupationByVehicle.push({ name: `${v.marque} ${v.modele}`, occupation: parseFloat(occupation) });
+        }
+        occupationByVehicle.sort((a,b) => b.occupation - a.occupation);
+        const ctxOccup = document.getElementById('occupationChart').getContext('2d');
+        if (window.occupChart) window.occupChart.destroy();
+        window.occupChart = new Chart(ctxOccup, { type: 'bar', data: { labels: occupationByVehicle.map(o => o.name), datasets: [{ label: 'Taux d\'occupation (%)', data: occupationByVehicle.map(o => o.occupation), backgroundColor: '#2c5282' }] }, options: { responsive: true, scales: { y: { max: 100, title: { display: true, text: '%' } } } } });
         
         // Suggestions stratégiques
-        generateSuggestions(filtered);
+        generateSuggestions(filtredAffaires, filtredContrats, totalRevenus, totalDepenses, beneficeLocation, tauxOccupation, totalCreditRestant);
     }
     
-    function generateSuggestions(deals) {
+    function generateSuggestions(affaires, contrats, totalRevenus, totalDepenses, beneficeLocation, tauxOccupation, creditRestant) {
         const container = document.getElementById('suggestionsList');
         let suggestions = [];
         
-        // 1. Investisseur le plus rentable
-        const profitByInvestor = {};
-        deals.forEach(deal => {
-            if (deal.statut === 'Terminé' && deal.profitRealise > 0) {
-                profitByInvestor[deal.investorName] = (profitByInvestor[deal.investorName] || 0) + deal.profitRealise;
-            }
-        });
-        if (Object.keys(profitByInvestor).length > 0) {
-            const topInvestor = Object.entries(profitByInvestor).sort((a,b) => b[1] - a[1])[0];
-            suggestions.push(`🏆 L'investisseur le plus rentable est **${topInvestor[0]}** avec ${topInvestor[1].toFixed(2)} DH de bénéfice généré.`);
-        }
+        if (beneficeLocation < 0) suggestions.push("⚠️ Le bénéfice des locations est négatif. Réduisez les dépenses ou augmentez les tarifs.");
+        else if (beneficeLocation < totalRevenus * 0.2) suggestions.push("📉 Marge locative faible (<20%). Optimisez vos coûts.");
         
-        // 2. Affaire la plus bénéficiaire
-        const bestDeal = deals.filter(d => d.statut === 'Terminé').sort((a,b) => b.profitRealise - a.profitRealise)[0];
-        if (bestDeal && bestDeal.profitRealise > 0) {
-            suggestions.push(`📈 L'affaire la plus bénéficiaire a rapporté ${bestDeal.profitRealise.toFixed(2)} DH (investisseur ${bestDeal.investorName}).`);
-        }
+        if (tauxOccupation < 30) suggestions.push("🚗 Taux d'occupation inférieur à 30%. Lancez des promotions ou révisez votre stratégie de location.");
+        else if (tauxOccupation > 80) suggestions.push("🔥 Forte demande ! Envisagez d'augmenter la flotte.");
         
-        // 3. Affaires en retard (date fin dépassée et non terminées)
-        const now = new Date();
-        const overdueDeals = deals.filter(d => d.statut !== 'Terminé' && d.dateFinObj && d.dateFinObj < now);
-        if (overdueDeals.length > 0) {
-            suggestions.push(`⚠️ ${overdueDeals.length} affaire(s) sont en retard de clôture. Pensez à les finaliser.`);
-        }
+        if (creditRestant > 10000) suggestions.push("💰 Crédits restants élevés. Priorisez le remboursement pour réduire les charges.");
         
-        // 4. Rendement global
-        const totalInvest = deals.reduce((s,d) => s + d.investAmount, 0);
-        const totalProfit = deals.reduce((s,d) => s + d.profitRealise, 0);
-        const roi = totalInvest > 0 ? (totalProfit / totalInvest * 100).toFixed(1) : 0;
-        if (roi > 10) {
-            suggestions.push(`🎉 Rendement actuel de ${roi}% – Excellente performance !`);
-        } else if (roi < 5 && deals.length > 0) {
-            suggestions.push(`📉 Rendement de ${roi}% – Envisagez de revoir les conditions des affaires.`);
-        }
+        // Affaires
+        const bestDeal = affaires.filter(a => a.profitRealise > 0).sort((a,b) => b.profitRealise - a.profitRealise)[0];
+        if (bestDeal) suggestions.push(`🏆 L'affaire la plus bénéficiaire a rapporté ${bestDeal.profitRealise.toFixed(2)} DH (investisseur ${bestDeal.investorName}).`);
         
-        // 5. Vérifier les investisseurs sans affaires récentes
-        const activeInvestors = new Set(deals.map(d => d.investorName));
-        const allInvestorNames = allInvestors.map(i => i.nom);
-        const inactiveInvestors = allInvestorNames.filter(name => !activeInvestors.has(name));
-        if (inactiveInvestors.length > 0) {
-            suggestions.push(`🤝 Certains investisseurs (${inactiveInvestors.slice(0,2).join(', ')}) n'ont pas d'affaires actives. Peut-être les solliciter.`);
-        }
+        const overdueDeals = affaires.filter(a => a.statut !== 'Terminé' && a.dateFinObj && a.dateFinObj < new Date());
+        if (overdueDeals.length > 0) suggestions.push(`⚠️ ${overdueDeals.length} affaire(s) en retard de clôture. Finalisez-les.`);
         
-        if (suggestions.length === 0) {
-            suggestions.push("Aucune suggestion particulière pour le moment. Tout est équilibré.");
-        }
+        if (suggestions.length === 0) suggestions.push("✅ Tous les indicateurs sont au vert. Continuez ainsi !");
         
         container.innerHTML = suggestions.map(s => `<div class="suggestion-card"><i class="fas fa-chart-line"></i> ${s}</div>`).join('');
     }
     
     // Authentification
     onAuthStateChanged(auth, async (user) => {
-        if (!user) {
-            window.location.href = "index.html";
-            return;
-        }
+        if (!user) { window.location.href = "index.html"; return; }
         currentUser = user;
-        userEmailSpan.innerText = user.email;
-        await loadData();
-        refreshBtn.addEventListener('click', () => loadData());
+        document.getElementById('userEmail').innerText = user.email;
+        await loadAllData();
+        refreshBtn.addEventListener('click', () => loadAllData());
+        periodFilter.addEventListener('change', () => applyFiltersAndRender());
+        investorFilter.addEventListener('change', () => applyFiltersAndRender());
     });
     document.getElementById('logoutBtn').onclick = () => signOut(auth);
 </script>
 </body>
-            </html>
+</html>
