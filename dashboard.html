@@ -2,28 +2,341 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>ABDERCAR - Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>ABDERCAR - Tableau de bord</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Styles complémentaires */
+        .kpi-card {
+            background: white;
+            border-radius: 20px;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+        .kpi-card:hover { transform: translateY(-3px); }
+        .kpi-value { font-size: 1.8rem; font-weight: bold; color: #1a3a6c; }
+        .kpi-label { font-size: 0.8rem; color: #666; }
+        .filters-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            align-items: flex-end;
+        }
+        .filter-group { flex: 1; min-width: 150px; }
+        .filter-group label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.25rem; }
+        .suggestion-card {
+            background: #e9f0ff;
+            border-left: 5px solid #1a3a6c;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border-radius: 12px;
+        }
+        .chart-container {
+            background: white;
+            border-radius: 16px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        @media (max-width: 768px) {
+            .kpi-value { font-size: 1.2rem; }
+            .filters-bar { flex-direction: column; }
+        }
+    </style>
 </head>
 <body>
 <div class="app-container">
-    <div class="main-header"><div class="logo"><h1><i class="fas fa-car"></i> ABDERCAR</h1><p>Gestion de flotte</p></div><div class="user-actions"><span id="userEmail"></span><button id="logoutBtn" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Déconnexion</button></div></div>
-    <div class="main-nav"><a href="dashboard.html" class="nav-link active">📊 Dashboard</a><a href="vehicules.html" class="nav-link">🚗 Véhicules</a><a href="contrats.html" class="nav-link">📝 Contrats</a><a href="depenses.html" class="nav-link">💰 Dépenses</a><a href="credits.html" class="nav-link">🏦 Crédits</a><a href="investisseurs.html" class="nav-link">👥 Investisseurs</a><a href="ia.html" class="nav-link">🤖 IA</a><a href="facturation.html" class="nav-link">📄 Facturation</a><a href="parc-auto.html" class="nav-link">📋 Parc Auto</a></div>
-    <div class="content"><h2>📈 Tableau de bord</h2><div class="grid-2"><div class="card"><h3>Revenus totaux</h3><p id="revenus">0 DH</p></div><div class="card"><h3>Dépenses totales</h3><p id="depenses">0 DH</p></div><div class="card"><h3>Bénéfice net</h3><p id="benefice">0 DH</p></div><div class="card"><h3>Marge (%)</h3><p id="marge">0 %</p></div></div><div class="card"><canvas id="chart"></canvas></div></div>
+    <div class="main-header">
+        <div class="logo"><h1><i class="fas fa-car"></i> ABDERCAR</h1><p>Gestion de flotte</p></div>
+        <div class="user-actions"><span id="userEmail"></span><button id="logoutBtn" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Déconnexion</button></div>
+    </div>
+    <div class="main-nav">
+        <a href="dashboard.html" class="nav-link active">📊 Dashboard</a>
+        <a href="vehicules.html" class="nav-link">🚗 Véhicules</a>
+        <a href="contrats.html" class="nav-link">📝 Contrats</a>
+        <a href="depenses.html" class="nav-link">💰 Dépenses</a>
+        <a href="credits.html" class="nav-link">🏦 Crédits</a>
+        <a href="investisseurs.html" class="nav-link">👥 Investisseurs</a>
+        <a href="ia.html" class="nav-link">🤖 IA</a>
+        <a href="facturation.html" class="nav-link">📄 Facturation</a>
+        <a href="parc-auto.html" class="nav-link">📋 Parc Auto</a>
+    </div>
+    <div class="content">
+        <h2>📊 Tableau de bord stratégique</h2>
+
+        <!-- Filtres -->
+        <div class="filters-bar">
+            <div class="filter-group">
+                <label>Période</label>
+                <select id="periodFilter" class="form-control">
+                    <option value="all">Tout</option>
+                    <option value="month">Ce mois</option>
+                    <option value="year">Cette année</option>
+                    <option value="last6">6 derniers mois</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Investisseur</label>
+                <select id="investorFilter" class="form-control">
+                    <option value="all">Tous</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <button id="refreshBtn" class="btn btn-primary"><i class="fas fa-sync-alt"></i> Actualiser</button>
+            </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="grid-2" style="margin-bottom: 1.5rem;">
+            <div class="kpi-card"><div class="kpi-value" id="kpiTotalInvest">0 DH</div><div class="kpi-label">Total investi par investisseurs</div></div>
+            <div class="kpi-card"><div class="kpi-value" id="kpiTotalProfit">0 DH</div><div class="kpi-label">Bénéfice net (réalisé)</div></div>
+            <div class="kpi-card"><div class="kpi-value" id="kpiNbDeals">0</div><div class="kpi-label">Affaires conclues</div></div>
+            <div class="kpi-card"><div class="kpi-value" id="kpiRoi">0%</div><div class="kpi-label">Rendement global</div></div>
+        </div>
+
+        <!-- Graphiques -->
+        <div class="chart-container">
+            <h3>💰 Investissement par investisseur</h3>
+            <canvas id="investByInvestorChart" height="200"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3>📈 Bénéfices par affaire (clôturées)</h3>
+            <canvas id="profitByDealChart" height="200"></canvas>
+        </div>
+
+        <!-- Suggestions stratégiques -->
+        <div class="card">
+            <h3><i class="fas fa-lightbulb"></i> Suggestions & alertes</h3>
+            <div id="suggestionsList"></div>
+        </div>
+    </div>
 </div>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    const firebaseConfig = { apiKey: "AIzaSyDE3BJsD1mp-vz9TEJSo4WtFcHe8sw6jJI", authDomain: "gslv-c3875.firebaseapp.com", projectId: "gslv-c3875", storageBucket: "gslv-c3875.firebasestorage.app", messagingSenderId: "971384785471", appId: "1:971384785471:web:c881bc4db0595720ae068a" };
+    import { getFirestore, collection, getDocs, query, where, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDE3BJsD1mp-vz9TEJSo4WtFcHe8sw6jJI",
+        authDomain: "gslv-c3875.firebaseapp.com",
+        projectId: "gslv-c3875",
+        storageBucket: "gslv-c3875.firebasestorage.app",
+        messagingSenderId: "971384785471",
+        appId: "1:971384785471:web:c881bc4db0595720ae068a"
+    };
+
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-    onAuthStateChanged(auth, async (user) => { if (!user) window.location.href="index.html"; else { document.getElementById('userEmail').innerText = user.email; await chargerStats(); } });
+
+    let currentUser = null;
+    let allDeals = [];
+    let allInvestors = [];
+    let vehiclesMap = new Map();
+
+    // Éléments DOM
+    const periodFilter = document.getElementById('periodFilter');
+    const investorFilter = document.getElementById('investorFilter');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const userEmailSpan = document.getElementById('userEmail');
+
+    async function loadData() {
+        if (!currentUser) return;
+        // Charger tous les véhicules pour calculer les prix d'achat
+        const vehiclesSnap = await getDocs(collection(db, "vehicules"));
+        vehiclesMap.clear();
+        vehiclesSnap.forEach(doc => { vehiclesMap.set(doc.id, doc.data()); });
+        
+        // Charger investisseurs (tous, car les affaires peuvent être liées à des investisseurs existants)
+        const investorsSnap = await getDocs(collection(db, "investisseurs"));
+        allInvestors = investorsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        
+        // Charger affaires
+        const dealsSnap = await getDocs(collection(db, "affaires"));
+        allDeals = [];
+        for (const docSnap of dealsSnap.docs) {
+            const deal = docSnap.data();
+            const investor = allInvestors.find(i => i.id === deal.investisseurId);
+            let totalBuyPrice = 0;
+            if (deal.vehicules) {
+                deal.vehicules.forEach(vid => {
+                    const v = vehiclesMap.get(vid);
+                    if (v) totalBuyPrice += v.prixAchat || 0;
+                });
+            }
+            const investAmount = totalBuyPrice * (deal.pourcentageAchat / 100);
+            let profit = 0;
+            if (deal.statut === 'Terminé' && deal.prixVente) {
+                const benefit = deal.prixVente - totalBuyPrice;
+                profit = benefit > 0 ? benefit * (deal.pourcentageBenefice / 100) : 0;
+            }
+            allDeals.push({
+                id: docSnap.id,
+                ...deal,
+                investorName: investor ? investor.nom : "Inconnu",
+                totalBuyPrice,
+                investAmount,
+                profitRealise: profit,
+                dateDebutObj: deal.dateDebut?.toDate ? deal.dateDebut.toDate() : new Date(deal.dateDebut),
+                dateFinObj: deal.dateFin?.toDate ? deal.dateFin.toDate() : new Date(deal.dateFin)
+            });
+        }
+        
+        // Mettre à jour le filtre investisseur
+        const investorSelect = document.getElementById('investorFilter');
+        investorSelect.innerHTML = '<option value="all">Tous les investisseurs</option>';
+        allInvestors.forEach(inv => {
+            investorSelect.innerHTML += `<option value="${inv.id}">${inv.nom}</option>`;
+        });
+        
+        applyFiltersAndRender();
+    }
+
+    function filterDealsByPeriod(deals, period) {
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth();
+        if (period === 'all') return deals;
+        if (period === 'month') {
+            return deals.filter(d => d.dateDebutObj.getFullYear() === currentYear && d.dateDebutObj.getMonth() === currentMonth);
+        }
+        if (period === 'year') {
+            return deals.filter(d => d.dateDebutObj.getFullYear() === currentYear);
+        }
+        if (period === 'last6') {
+            const sixMonthsAgo = new Date();
+            sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+            return deals.filter(d => d.dateDebutObj >= sixMonthsAgo);
+        }
+        return deals;
+    }
+
+    async function applyFiltersAndRender() {
+        const period = periodFilter.value;
+        const investorId = investorFilter.value;
+        
+        let filtered = [...allDeals];
+        filtered = filterDealsByPeriod(filtered, period);
+        if (investorId !== 'all') {
+            filtered = filtered.filter(d => d.investisseurId === investorId);
+        }
+        
+        // Calcul des KPIs
+        const totalInvest = filtered.reduce((sum, d) => sum + d.investAmount, 0);
+        const totalProfit = filtered.reduce((sum, d) => sum + d.profitRealise, 0);
+        const nbDeals = filtered.length;
+        const roi = totalInvest > 0 ? (totalProfit / totalInvest * 100).toFixed(1) : 0;
+        
+        document.getElementById('kpiTotalInvest').innerText = totalInvest.toFixed(2) + " DH";
+        document.getElementById('kpiTotalProfit').innerText = totalProfit.toFixed(2) + " DH";
+        document.getElementById('kpiNbDeals').innerText = nbDeals;
+        document.getElementById('kpiRoi').innerText = roi + "%";
+        
+        // Graphique investissement par investisseur (camembert)
+        const investByInvestor = {};
+        filtered.forEach(deal => {
+            const name = deal.investorName;
+            investByInvestor[name] = (investByInvestor[name] || 0) + deal.investAmount;
+        });
+        const labelsInvest = Object.keys(investByInvestor);
+        const dataInvest = labelsInvest.map(l => investByInvestor[l]);
+        
+        const ctx1 = document.getElementById('investByInvestorChart').getContext('2d');
+        if (window.investChart) window.investChart.destroy();
+        window.investChart = new Chart(ctx1, {
+            type: 'pie',
+            data: { labels: labelsInvest, datasets: [{ data: dataInvest, backgroundColor: ['#1a3a6c','#2c5282','#e74c3c','#28a745','#ffc107','#17a2b8'] }] },
+            options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+        });
+        
+        // Graphique bénéfices par affaire (seulement celles terminées avec profit)
+        const profitableDeals = filtered.filter(d => d.statut === 'Terminé' && d.profitRealise > 0);
+        const dealLabels = profitableDeals.map((_, idx) => `Deal ${idx+1}`);
+        const dealProfits = profitableDeals.map(d => d.profitRealise);
+        const ctx2 = document.getElementById('profitByDealChart').getContext('2d');
+        if (window.profitChart) window.profitChart.destroy();
+        window.profitChart = new Chart(ctx2, {
+            type: 'bar',
+            data: { labels: dealLabels, datasets: [{ label: 'Bénéfice (DH)', data: dealProfits, backgroundColor: '#2c5282' }] },
+            options: { responsive: true, scales: { y: { beginAtZero: true, title: { display: true, text: 'DH' } } } }
+        });
+        
+        // Suggestions stratégiques
+        generateSuggestions(filtered);
+    }
+    
+    function generateSuggestions(deals) {
+        const container = document.getElementById('suggestionsList');
+        let suggestions = [];
+        
+        // 1. Investisseur le plus rentable
+        const profitByInvestor = {};
+        deals.forEach(deal => {
+            if (deal.statut === 'Terminé' && deal.profitRealise > 0) {
+                profitByInvestor[deal.investorName] = (profitByInvestor[deal.investorName] || 0) + deal.profitRealise;
+            }
+        });
+        if (Object.keys(profitByInvestor).length > 0) {
+            const topInvestor = Object.entries(profitByInvestor).sort((a,b) => b[1] - a[1])[0];
+            suggestions.push(`🏆 L'investisseur le plus rentable est **${topInvestor[0]}** avec ${topInvestor[1].toFixed(2)} DH de bénéfice généré.`);
+        }
+        
+        // 2. Affaire la plus bénéficiaire
+        const bestDeal = deals.filter(d => d.statut === 'Terminé').sort((a,b) => b.profitRealise - a.profitRealise)[0];
+        if (bestDeal && bestDeal.profitRealise > 0) {
+            suggestions.push(`📈 L'affaire la plus bénéficiaire a rapporté ${bestDeal.profitRealise.toFixed(2)} DH (investisseur ${bestDeal.investorName}).`);
+        }
+        
+        // 3. Affaires en retard (date fin dépassée et non terminées)
+        const now = new Date();
+        const overdueDeals = deals.filter(d => d.statut !== 'Terminé' && d.dateFinObj && d.dateFinObj < now);
+        if (overdueDeals.length > 0) {
+            suggestions.push(`⚠️ ${overdueDeals.length} affaire(s) sont en retard de clôture. Pensez à les finaliser.`);
+        }
+        
+        // 4. Rendement global
+        const totalInvest = deals.reduce((s,d) => s + d.investAmount, 0);
+        const totalProfit = deals.reduce((s,d) => s + d.profitRealise, 0);
+        const roi = totalInvest > 0 ? (totalProfit / totalInvest * 100).toFixed(1) : 0;
+        if (roi > 10) {
+            suggestions.push(`🎉 Rendement actuel de ${roi}% – Excellente performance !`);
+        } else if (roi < 5 && deals.length > 0) {
+            suggestions.push(`📉 Rendement de ${roi}% – Envisagez de revoir les conditions des affaires.`);
+        }
+        
+        // 5. Vérifier les investisseurs sans affaires récentes
+        const activeInvestors = new Set(deals.map(d => d.investorName));
+        const allInvestorNames = allInvestors.map(i => i.nom);
+        const inactiveInvestors = allInvestorNames.filter(name => !activeInvestors.has(name));
+        if (inactiveInvestors.length > 0) {
+            suggestions.push(`🤝 Certains investisseurs (${inactiveInvestors.slice(0,2).join(', ')}) n'ont pas d'affaires actives. Peut-être les solliciter.`);
+        }
+        
+        if (suggestions.length === 0) {
+            suggestions.push("Aucune suggestion particulière pour le moment. Tout est équilibré.");
+        }
+        
+        container.innerHTML = suggestions.map(s => `<div class="suggestion-card"><i class="fas fa-chart-line"></i> ${s}</div>`).join('');
+    }
+    
+    // Authentification
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+            window.location.href = "index.html";
+            return;
+        }
+        currentUser = user;
+        userEmailSpan.innerText = user.email;
+        await loadData();
+        refreshBtn.addEventListener('click', () => loadData());
+    });
     document.getElementById('logoutBtn').onclick = () => signOut(auth);
-    async function chargerStats() { const contratsSnap = await getDocs(collection(db, "contrats")); let revenus = 0; contratsSnap.forEach(d => revenus += d.data().montant); const depensesSnap = await getDocs(collection(db, "depenses")); let depenses = 0; depensesSnap.forEach(d => depenses += d.data().montant); const benef = revenus - depenses; const marge = revenus ? (benef/revenus*100).toFixed(1) : 0; document.getElementById('revenus').innerText = revenus + ' DH'; document.getElementById('depenses').innerText = depenses + ' DH'; document.getElementById('benefice').innerText = benef + ' DH'; document.getElementById('marge').innerText = marge + ' %'; new Chart(document.getElementById('chart'), { type:'bar', data:{ labels:['Revenus','Dépenses'], datasets:[{ data:[revenus,depenses], backgroundColor:['#28a745','#e74c3c'] }] } }); }
 </script>
 </body>
-</html>
+            </html>
