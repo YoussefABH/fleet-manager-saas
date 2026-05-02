@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .card-actions { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
+        .two-col-form { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        @media (max-width: 768px) { .two-col-form { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -37,42 +39,69 @@
     </div>
 </div>
 
-<!-- MODAL CONTRAT (identique à avant) -->
+<!-- MODAL CONTRAT (avec deuxième conducteur) -->
 <div id="contratModal" style="display: none; position: fixed; inset:0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; overflow-y: auto; padding: 20px;">
-    <div style="background: white; max-width: 700px; width: 100%; border-radius: 20px; padding: 1.5rem; margin: auto;">
+    <div style="background: white; max-width: 800px; width: 100%; border-radius: 20px; padding: 1.5rem; margin: auto;">
         <h3 class="mb-3">Nouveau contrat</h3>
-        <div class="form-group"><label>Véhicule</label><select id="contratVehiculeId" class="form-control"></select></div>
+        <div class="form-group"><label>Véhicule *</label><select id="contratVehiculeId" class="form-control"></select></div>
+        
         <div class="form-group"><label>Type client</label><select id="clientType" class="form-control"><option value="particulier">Particulier</option><option value="societe">Société</option></select></div>
+        
+        <!-- Conducteur principal -->
         <div id="particulierFields">
-            <div class="form-group"><label>CIN</label><input id="conducteurCin" class="form-control"></div>
-            <div class="form-group"><label>Nom complet</label><input id="conducteurNom" class="form-control"></div>
-            <div class="form-group"><label>Téléphone</label><input id="conducteurTel" class="form-control"></div>
-            <div class="form-group"><label>Email</label><input id="conducteurEmail" class="form-control"></div>
-            <div class="form-group"><label>Adresse</label><input id="conducteurAdresse" class="form-control"></div>
-            <div class="form-group"><label>Permis n°</label><input id="conducteurPermis" class="form-control"></div>
+            <h4>Conducteur principal</h4>
+            <div class="two-col-form">
+                <div><label>CIN *</label><input id="conducteurCin" class="form-control"></div>
+                <div><label>Nom complet *</label><input id="conducteurNom" class="form-control"></div>
+                <div><label>Téléphone</label><input id="conducteurTel" class="form-control"></div>
+                <div><label>Email</label><input id="conducteurEmail" class="form-control"></div>
+                <div><label>Adresse</label><input id="conducteurAdresse" class="form-control" colspan="2"></div>
+                <div><label>Permis n°</label><input id="conducteurPermis" class="form-control"></div>
+            </div>
         </div>
         <div id="societeFields" style="display:none;">
-            <div class="form-group"><label>Raison sociale</label><input id="societeRaison" class="form-control"></div>
-            <div class="form-group"><label>ICE</label><input id="societeICE" class="form-control"></div>
-            <div class="form-group"><label>IF</label><input id="societeIF" class="form-control"></div>
-            <div class="form-group"><label>RC</label><input id="societeRC" class="form-control"></div>
-            <div class="form-group"><label>Adresse</label><input id="societeAdresse" class="form-control"></div>
-            <div class="form-group"><label>Email</label><input id="societeEmail" class="form-control"></div>
-            <div class="form-group"><label>Téléphone</label><input id="societeTel" class="form-control"></div>
-            <div class="form-group"><label>Contact</label><input id="societeContact" class="form-control"></div>
+            <h4>Société (client moral)</h4>
+            <div class="two-col-form">
+                <div><label>Raison sociale *</label><input id="societeRaison" class="form-control"></div>
+                <div><label>ICE *</label><input id="societeICE" class="form-control"></div>
+                <div><label>IF *</label><input id="societeIF" class="form-control"></div>
+                <div><label>RC *</label><input id="societeRC" class="form-control"></div>
+                <div><label>Adresse *</label><input id="societeAdresse" class="form-control"></div>
+                <div><label>Email *</label><input id="societeEmail" class="form-control"></div>
+                <div><label>Téléphone *</label><input id="societeTel" class="form-control"></div>
+                <div><label>Personne de contact</label><input id="societeContact" class="form-control"></div>
+            </div>
         </div>
-        <div class="form-group"><label>Date début</label><input id="contratDebut" type="date" class="form-control"></div>
-        <div class="form-group"><label>Date fin</label><input id="contratFin" type="date" class="form-control"></div>
-        <div class="form-group"><label>Montant total (DH)</label><input id="contratMontant" type="number" class="form-control"></div>
-        <div class="form-group"><label>Avance (DH)</label><input id="contratAvance" type="number" class="form-control" value="0"></div>
-        <div class="form-group"><label>Lieu départ</label><input id="lieuDepart" class="form-control" value="Rabat"></div>
-        <div class="form-group"><label>Lieu retour</label><input id="lieuRetour" class="form-control"></div>
-        <div class="form-group"><label>Km départ</label><input id="kmDepart" type="number" class="form-control"></div>
-        <div class="form-group"><label>Km retour</label><input id="kmRetour" type="number" class="form-control"></div>
-        <div class="form-group"><label>Carburant départ</label><select id="niveauCarburant" class="form-control"><option>Plein</option><option>Réservé</option><option>Moitié</option></select></div>
-        <div class="form-group"><label>État livraison</label><input id="etatLivraison" class="form-control" value="Très bon état"></div>
-        <div class="form-group"><label>État retour</label><input id="etatRetour" class="form-control"></div>
-        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+        
+        <!-- Deuxième conducteur (optionnel) -->
+        <div style="margin-top: 1rem;">
+            <h4>Deuxième conducteur (optionnel)</h4>
+            <div class="two-col-form" id="deuxiemeConducteurFields">
+                <div><label>Nom complet</label><input id="deuxiemeNom" class="form-control"></div>
+                <div><label>CIN</label><input id="deuxiemeCin" class="form-control"></div>
+                <div><label>Téléphone</label><input id="deuxiemeTel" class="form-control"></div>
+                <div><label>Permis n°</label><input id="deuxiemePermis" class="form-control"></div>
+                <div><label>Adresse</label><input id="deuxiemeAdresse" class="form-control" colspan="2"></div>
+            </div>
+        </div>
+        
+        <!-- Détails location -->
+        <h4>Période et tarifs</h4>
+        <div class="two-col-form">
+            <div><label>Date début *</label><input id="contratDebut" type="date" class="form-control"></div>
+            <div><label>Date fin *</label><input id="contratFin" type="date" class="form-control"></div>
+            <div><label>Montant total (DH) *</label><input id="contratMontant" type="number" class="form-control"></div>
+            <div><label>Avance / Caution (DH)</label><input id="contratAvance" type="number" class="form-control" value="0"></div>
+            <div><label>Lieu départ</label><input id="lieuDepart" class="form-control" value="Rabat"></div>
+            <div><label>Lieu retour</label><input id="lieuRetour" class="form-control"></div>
+            <div><label>Km départ</label><input id="kmDepart" type="number" class="form-control"></div>
+            <div><label>Km retour (prévisionnel)</label><input id="kmRetour" type="number" class="form-control"></div>
+            <div><label>Carburant départ</label><select id="niveauCarburant" class="form-control"><option>Plein</option><option>Réservé</option><option>Moitié</option></select></div>
+            <div><label>État livraison</label><input id="etatLivraison" class="form-control" value="Très bon état"></div>
+            <div><label>État retour</label><input id="etatRetour" class="form-control"></div>
+        </div>
+        
+        <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem;">
             <button id="closeContratModal" class="btn btn-secondary">Annuler</button>
             <button id="saveContrat" class="btn btn-primary">Enregistrer contrat</button>
         </div>
@@ -99,7 +128,7 @@
     let currentUser = null;
     let vehiculesList = [];
 
-    // MODAL LOGIC (identique)
+    // MODAL LOGIC
     const modal = document.getElementById('contratModal');
     const openBtn = document.getElementById('openContratModalBtn');
     const closeBtn = document.getElementById('closeContratModal');
@@ -120,6 +149,7 @@
 
     openBtn.onclick = () => {
         if (vehiculesList.length === 0) { alert("Ajoutez d'abord un véhicule."); return; }
+        // Reset all fields
         document.getElementById('contratVehiculeId').value = '';
         document.getElementById('conducteurCin').value = '';
         document.getElementById('conducteurNom').value = '';
@@ -135,6 +165,11 @@
         document.getElementById('societeEmail').value = '';
         document.getElementById('societeTel').value = '';
         document.getElementById('societeContact').value = '';
+        document.getElementById('deuxiemeNom').value = '';
+        document.getElementById('deuxiemeCin').value = '';
+        document.getElementById('deuxiemeTel').value = '';
+        document.getElementById('deuxiemePermis').value = '';
+        document.getElementById('deuxiemeAdresse').value = '';
         document.getElementById('contratDebut').value = '';
         document.getElementById('contratFin').value = '';
         document.getElementById('contratMontant').value = '';
@@ -164,8 +199,15 @@
         if (clientTypeSelect.value === 'particulier') {
             const cin = document.getElementById('conducteurCin').value.trim();
             const nom = document.getElementById('conducteurNom').value.trim();
-            if (!cin || !nom) { alert("CIN et nom requis"); return; }
-            clientInfo = { type: 'particulier', cin, nom, telephone: document.getElementById('conducteurTel').value, email: document.getElementById('conducteurEmail').value, adresse: document.getElementById('conducteurAdresse').value, permis: document.getElementById('conducteurPermis').value };
+            if (!cin || !nom) { alert("CIN et nom du conducteur principal requis"); return; }
+            clientInfo = {
+                type: 'particulier',
+                cin, nom,
+                telephone: document.getElementById('conducteurTel').value,
+                email: document.getElementById('conducteurEmail').value,
+                adresse: document.getElementById('conducteurAdresse').value,
+                permis: document.getElementById('conducteurPermis').value
+            };
         } else {
             const raison = document.getElementById('societeRaison').value.trim();
             const ice = document.getElementById('societeICE').value.trim();
@@ -175,11 +217,30 @@
             const email = document.getElementById('societeEmail').value.trim();
             const tel = document.getElementById('societeTel').value.trim();
             if (!raison || !ice || !ifs || !rc || !adresse || !email || !tel) { alert("Tous les champs société requis"); return; }
-            clientInfo = { type: 'societe', raisonSociale: raison, ice, if: ifs, rc, adresse, email, telephone: tel, contact: document.getElementById('societeContact').value };
+            clientInfo = {
+                type: 'societe',
+                raisonSociale: raison, ice, if: ifs, rc, adresse, email, telephone: tel,
+                contact: document.getElementById('societeContact').value
+            };
         }
+        
+        // Deuxième conducteur (optionnel)
+        const deuxiemeNom = document.getElementById('deuxiemeNom').value.trim();
+        const deuxiemeConducteur = deuxiemeNom ? {
+            nom: deuxiemeNom,
+            cin: document.getElementById('deuxiemeCin').value.trim(),
+            telephone: document.getElementById('deuxiemeTel').value.trim(),
+            permis: document.getElementById('deuxiemePermis').value.trim(),
+            adresse: document.getElementById('deuxiemeAdresse').value.trim()
+        } : null;
 
         const contratData = {
-            vehiculeId, clientInfo, debut: new Date(debut), fin: new Date(fin), montant,
+            vehiculeId,
+            clientInfo,
+            deuxiemeConducteur,
+            debut: new Date(debut),
+            fin: new Date(fin),
+            montant,
             avance: Number(document.getElementById('contratAvance').value) || 0,
             lieuDepart: document.getElementById('lieuDepart').value,
             lieuRetour: document.getElementById('lieuRetour').value,
@@ -188,7 +249,10 @@
             niveauCarburant: document.getElementById('niveauCarburant').value,
             etatLivraison: document.getElementById('etatLivraison').value,
             etatRetour: document.getElementById('etatRetour').value,
-            userId: currentUser.uid, createdAt: new Date(), updatedAt: new Date(), statut: "actif"
+            userId: currentUser.uid,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            statut: "actif"
         };
         try {
             await addDoc(collection(db, "contrats"), contratData);
@@ -238,7 +302,7 @@
         document.querySelectorAll('.downloadPdf').forEach(btn => btn.onclick = () => genererPDFContrat(btn.dataset.id));
     }
 
-    // ==================== GÉNÉRATION PDF AVEC LA LOGIQUE DU CONTRAT FOURNI ====================
+    // ========== GÉNÉRATION PDF ==========
     async function genererPDFContrat(contratId) {
         const contratDoc = await getDoc(doc(db, "contrats", contratId));
         if (!contratDoc.exists()) { alert("Contrat introuvable"); return; }
@@ -246,21 +310,18 @@
         const vehiculeDoc = await getDoc(doc(db, "vehicules", contrat.vehiculeId));
         const vehicule = vehiculeDoc.exists() ? vehiculeDoc.data() : { marque: "", modele: "", immatriculation: "" };
 
-        // Extraction des données
         const client = contrat.clientInfo;
+        const deuxieme = contrat.deuxiemeConducteur;
         const debut = contrat.debut.toDate();
         const fin = contrat.fin.toDate();
-        const nbJours = Math.ceil((fin - debut) / (1000 * 60 * 60 * 24));
+        const nbJours = Math.ceil((fin - debut) / (1000*60*60*24));
         const prixJournalier = (contrat.montant / nbJours).toFixed(2);
         const tva = contrat.montant * 0.2;
         const totalTTC = contrat.montant + tva;
-        const caution = contrat.avance || 0;  // L'avance est considérée comme caution dans le contrat type
+        const caution = contrat.avance || 0;
         const kmDepart = contrat.kmDepart || "_____";
         
         let nom = "", cin = "", permis = "", telephone = "", adresse = "";
-        let deuxiemeNom = "", deuxiemeCin = "", deuxiemeAdresse = "", deuxiemePermis = "", deuxiemeMobile = "";
-        let modeReglement = "especes"; // Par défaut
-
         if (client.type === 'particulier') {
             nom = client.nom;
             cin = client.cin;
@@ -274,274 +335,146 @@
             telephone = client.telephone;
             adresse = client.adresse;
         }
+        
+        // Articles (conditions générales)
+        const articles = [
+            {titre:"ARTICLE 1 – OBJET DU CONTRAT", texte:"Le présent contrat a pour objet la location d’un véhicule par la société ABDERCAR, ci-après dénommée « le Loueur », au profit du client, ci-après dénommé « le Locataire ». La location est strictement personnelle, temporaire et non transmissible."},
+            {titre:"ARTICLE 2 – FORMATION DU CONTRAT", texte:"Le contrat est formé dès signature par les parties et remise du véhicule. La signature vaut : acceptation sans réserve, reconnaissance de l’état du véhicule, engagement à respecter toutes les clauses."},
+            {titre:"ARTICLE 3 – CONDUCTEURS AUTORISÉS", texte:`Seuls les conducteurs mentionnés au contrat sont autorisés à conduire le véhicule. Le locataire reste pleinement responsable, même si un tiers conduit. Toute conduite non autorisée entraîne exclusion d’assurance et responsabilité totale du locataire. Conducteur principal : ${nom} (permis ${permis}).${deuxieme ? `\nDeuxième conducteur : ${deuxieme.nom} (permis ${deuxieme.permis || "non renseigné"})` : ""}`},
+            {titre:"ARTICLE 4 – UTILISATION DU VÉHICULE", texte:"Le locataire s’engage à utiliser le véhicule conformément à sa destination. Il est strictement interdit : d’utiliser le véhicule à des fins illégales, de transporter des passagers à titre onéreux, de participer à des courses ou essais, de circuler hors routes carrossables, de sortir le véhicule du territoire marocain, de sous-louer ou céder le véhicule. En cas de violation : résiliation immédiate + poursuites possibles."},
+            {titre:"ARTICLE 5 – ÉTAT DU VÉHICULE", texte:`Le véhicule est remis en bon état apparent et de fonctionnement. La fiche état + photos font foi juridiquement. Toute absence de réserve = acceptation définitive. Le locataire doit restituer le véhicule dans le même état (hors usure normale). Kilométrage départ : ${kmDepart} km.`},
+            {titre:"ARTICLE 6 – ENTRETIEN ET UTILISATION TECHNIQUE", texte:"Le locataire doit : vérifier huile, eau, pression pneus, utiliser carburant adapté, respecter les alertes du véhicule. Toute négligence engage sa responsabilité totale."},
+            {titre:"ARTICLE 7 – DURÉE – PROLONGATION", texte:`La location est conclue pour une durée déterminée du ${debut.toLocaleDateString()} au ${fin.toLocaleDateString()}. Toute prolongation nécessite accord écrit et doit être payée à l’avance. À défaut : abus de confiance (poursuites pénales possibles).`},
+            {titre:"ARTICLE 8 – RESTITUTION DU VÉHICULE", texte:`Le véhicule doit être restitué à la date prévue (${fin.toLocaleDateString()}), au lieu convenu, avec le même niveau de carburant, dans le même état. Toute journée commencée est due. Tout retard = facturation + indemnité.`},
+            {titre:"ARTICLE 9 – CLAUSE ESSENTIELLE (DROITS DU LOUEUR)", texte:"La restitution du véhicule ne constitue ni quitus, ni règlement, ni renonciation aux droits du Loueur. Le locataire reste redevable de : dommages constatés après restitution, franchise assurance, frais cachés ou différés, amendes reçues ultérieurement. ABDERCAR conserve un droit de poursuite TOTAL même après restitution."},
+            {titre:"ARTICLE 10 – DÉPÔT DE GARANTIE", texte:`Un dépôt de garantie d’un montant de ${caution} MAD est exigé. Il sert à couvrir : dommages, franchise, retards, frais divers. Le loueur peut retenir partiellement ou totalement la caution, sans autorisation préalable du locataire.`},
+            {titre:"ARTICLE 11 – ASSURANCE", texte:"Le véhicule est assuré conformément à la loi marocaine. Restent à la charge du locataire : franchise, dommages non couverts, faute grave. Exclusions : alcool / drogue, conducteur non autorisé, absence de permis, négligence."},
+            {titre:"ARTICLE 12 – ACCIDENT / SINISTRE", texte:"Le locataire doit prévenir immédiatement le loueur, déclarer aux autorités, fournir constat. Interdiction : reconnaître sa responsabilité, négocier avec tiers."},
+            {titre:"ARTICLE 13 – PANNES ET IMMOBILISATION", texte:"Panne normale → loueur. Mauvaise utilisation → locataire. Immobilisation imputable au locataire : facturation journalière complète."},
+            {titre:"ARTICLE 14 – AMENDES ET INFRACTIONS", texte:"Le locataire est seul responsable de : amendes, PV, infractions. Le loueur peut payer et refacturer, ou transmettre aux autorités."},
+            {titre:"ARTICLE 15 – NETTOYAGE", texte:"Le véhicule doit être rendu propre. Nettoyage exceptionnel facturé."},
+            {titre:"ARTICLE 16 – PREUVE", texte:"Font foi : contrat signé, fiche état, photos, messages (WhatsApp, email). Preuve électronique reconnue."},
+            {titre:"ARTICLE 17 – DETTE ET RECOUVREMENT", texte:"Toute somme due est certaine, liquide et exigible. En cas de non-paiement : mise en demeure, pénalité 20 %, poursuites judiciaires."},
+            {titre:"ARTICLE 18 – RÉSILIATION", texte:"Le loueur peut résilier immédiatement en cas de non-respect, danger ou fraude."},
+            {titre:"ARTICLE 19 – FORCE MAJEURE", texte:"Le loueur n’est pas responsable en cas de catastrophe, blocage administratif, événement imprévisible."},
+            {titre:"ARTICLE 20 – JURIDICTION", texte:"Tout litige relève des tribunaux de Rabat – Salé – Témara."},
+            {titre:"ARTICLE 21 – ACCEPTATION", texte:"La signature vaut acceptation totale et engagement irrévocable."}
+        ];
 
-        // Fonction de génération HTML du contrat (inspirée de votre code)
-        function genererContratRectoVerso(
-            locataire, cin, permis, mobile, adresse, vehicule, matricule, debut, fin, caution, km,
-            deuxiemeCondNom, deuxiemeCondCin, deuxiemeCondAdresse, deuxiemeCondPermis, deuxiemeCondMobile,
-            agenceDepart, agenceRetour, heureDepart, heureRetour, lieuDepart, lieuRetour,
-            changementVehiculeModele, changementVehiculeMatricule, changementVehiculeKm,
-            prolongationDebut, prolongationFin, lieuProlongationDepart, lieuProlongationRetour, fraisLivraison,
-            modeReglement, observations
-        ) {
-            const today = new Date().toLocaleDateString('fr-FR');
-            const safeLoc = locataire.trim() || "___________________";
-            const safeCin = cin.trim() || "_______________";
-            const safePermis = permis.trim() || "_______________";
-            const safeMobile = mobile.trim() || "_______________";
-            const safeAdresse = adresse.trim() || "_______________";
-            const safeVehicule = vehicule.trim() || "_______________";
-            const safeMatricule = matricule.trim() || "_______________";
-            const safeDebut = debut.trim() || "[Date]";
-            const safeFin = fin.trim() || "[Date]";
-            const safeCaution = caution.toString().trim() || "0";
-            const safeKm = km.toString().trim() || "_____";
+        const articlesHtml = articles.map(art => `<div style="margin-bottom:1rem;"><div style="font-weight:bold;">${art.titre}</div><div style="text-align:justify;">${art.texte}</div></div>`).join('');
 
-            const safeDeuxNom = deuxiemeCondNom?.trim() || "_______________";
-            const safeDeuxCin = deuxiemeCondCin?.trim() || "_______________";
-            const safeDeuxAdresse = deuxiemeCondAdresse?.trim() || "_______________";
-            const safeDeuxPermis = deuxiemeCondPermis?.trim() || "_______________";
-            const safeDeuxMobile = deuxiemeCondMobile?.trim() || "_______________";
-
-            const safeAgenceDepart = agenceDepart?.trim() || "Rabat - Agence Principale";
-            const safeAgenceRetour = agenceRetour?.trim() || "Rabat - Agence Principale";
-            const safeHeureDepart = heureDepart?.trim() || "10:00";
-            const safeHeureRetour = heureRetour?.trim() || "10:00";
-            const safeLieuDepart = lieuDepart?.trim() || "Rabat";
-            const safeLieuRetour = lieuRetour?.trim() || "Rabat";
-
-            const safeChangementModele = changementVehiculeModele?.trim() || "_______________";
-            const safeChangementMatricule = changementVehiculeMatricule?.trim() || "_______________";
-            const safeChangementKm = changementVehiculeKm?.trim() || "_______________";
-
-            const safeProDebut = prolongationDebut?.trim() || "___________";
-            const safeProFin = prolongationFin?.trim() || "___________";
-            const safeLieuProDepart = lieuProlongationDepart?.trim() || "_______________";
-            const safeLieuProRetour = lieuProlongationRetour?.trim() || "_______________";
-            const safeFraisLivraison = fraisLivraison?.trim() || "_______________";
-
-            const modeReg = modeReglement === "cheque" ? "Chèque" : (modeReglement === "especes" ? "Espèces" : "Autres");
-            const safeObservations = observations?.trim() || "_________________________________________";
-
-            // articles (21, raccourcis mais complets)
-            const articles = [
-                {titre:"ARTICLE 1 – OBJET DU CONTRAT", texte:"Le présent contrat a pour objet la location d’un véhicule par la société ABDERCAR, ci-après dénommée « le Loueur », au profit du client, ci-après dénommé « le Locataire ». La location est strictement personnelle, temporaire et non transmissible."},
-                {titre:"ARTICLE 2 – FORMATION DU CONTRAT", texte:"Le contrat est formé dès signature par les parties et remise du véhicule. 👉 La signature vaut : acceptation sans réserve, reconnaissance de l’état du véhicule, engagement à respecter toutes les clauses."},
-                {titre:"ARTICLE 3 – CONDUCTEURS AUTORISÉS", texte:`Seuls les conducteurs mentionnés au contrat sont autorisés à conduire le véhicule. Le locataire reste pleinement responsable, même si un tiers conduit. ❗ Toute conduite non autorisée entraîne : exclusion d’assurance, responsabilité totale du locataire. Conducteur principal : ${safeLoc} (permis ${safePermis}).`},
-                {titre:"ARTICLE 4 – UTILISATION DU VÉHICULE", texte:"Le locataire s’engage à utiliser le véhicule conformément à sa destination. Il est strictement interdit : d’utiliser le véhicule à des fins illégales, de transporter des passagers à titre onéreux, de participer à des courses ou essais, de circuler hors routes carrossables, de sortir le véhicule du territoire marocain, de sous-louer ou céder le véhicule. 👉 En cas de violation : résiliation immédiate + poursuites possibles."},
-                {titre:"ARTICLE 5 – ÉTAT DU VÉHICULE", texte:`Le véhicule est remis en bon état apparent et de fonctionnement. La fiche état + photos font foi juridiquement. 👉 Toute absence de réserve = acceptation définitive. Le locataire doit restituer le véhicule dans le même état (hors usure normale). Kilométrage départ : ${safeKm} km.`},
-                {titre:"ARTICLE 6 – ENTRETIEN ET UTILISATION TECHNIQUE", texte:"Le locataire doit : vérifier huile, eau, pression pneus, utiliser carburant adapté, respecter les alertes du véhicule. 👉 Toute négligence engage sa responsabilité totale."},
-                {titre:"ARTICLE 7 – DURÉE – PROLONGATION", texte:`La location est conclue pour une durée déterminée du ${safeDebut} au ${safeFin}. Toute prolongation nécessite accord écrit et doit être payée à l’avance. 👉 À défaut : abus de confiance (poursuites pénales possibles).`},
-                {titre:"ARTICLE 8 – RESTITUTION DU VÉHICULE", texte:`Le véhicule doit être restitué à la date prévue (${safeFin}), au lieu convenu, avec le même niveau de carburant, dans le même état. 👉 Toute journée commencée est due. 👉 Tout retard = facturation + indemnité.`},
-                {titre:"ARTICLE 9 – CLAUSE ESSENTIELLE (DROITS DU LOUEUR)", texte:"La restitution du véhicule ne constitue ni quitus, ni règlement, ni renonciation aux droits du Loueur. Le locataire reste redevable de : dommages constatés après restitution, franchise assurance, frais cachés ou différés, amendes reçues ultérieurement. 👉 ABDERCAR conserve un droit de poursuite TOTAL même après restitution."},
-                {titre:"ARTICLE 10 – DÉPÔT DE GARANTIE", texte:`Un dépôt de garantie d’un montant de ${safeCaution} MAD est exigé. Il sert à couvrir : dommages, franchise, retards, frais divers. Le loueur peut : 👉 retenir partiellement ou totalement la caution, sans autorisation préalable du locataire.`},
-                {titre:"ARTICLE 11 – ASSURANCE", texte:"Le véhicule est assuré conformément à la loi marocaine. ❗ Restent à la charge du locataire : franchise, dommages non couverts, faute grave. ❗ Exclusions : alcool / drogue, conducteur non autorisé, absence de permis, négligence."},
-                {titre:"ARTICLE 12 – ACCIDENT / SINISTRE", texte:"Le locataire doit prévenir immédiatement le loueur, déclarer aux autorités, fournir constat. ❗ Interdiction : reconnaître sa responsabilité, négocier avec tiers."},
-                {titre:"ARTICLE 13 – PANNES ET IMMOBILISATION", texte:"Panne normale → loueur. Mauvaise utilisation → locataire. 👉 Immobilisation imputable au locataire : facturation journalière complète."},
-                {titre:"ARTICLE 14 – AMENDES ET INFRACTIONS", texte:"Le locataire est seul responsable de : amendes, PV, infractions. 👉 Le loueur peut : payer et refacturer, ou transmettre aux autorités."},
-                {titre:"ARTICLE 15 – NETTOYAGE", texte:"Le véhicule doit être rendu propre. 👉 Nettoyage exceptionnel facturé."},
-                {titre:"ARTICLE 16 – PREUVE", texte:"Font foi : contrat signé, fiche état, photos, messages (WhatsApp, email). Preuve électronique reconnue."},
-                {titre:"ARTICLE 17 – DETTE ET RECOUVREMENT", texte:"Toute somme due est certaine, liquide et exigible. En cas de non-paiement : mise en demeure, pénalité 20 %, poursuites judiciaires."},
-                {titre:"ARTICLE 18 – RÉSILIATION", texte:"Le loueur peut résilier immédiatement en cas de non-respect, danger ou fraude."},
-                {titre:"ARTICLE 19 – FORCE MAJEURE", texte:"Le loueur n’est pas responsable en cas de catastrophe, blocage administratif, événement imprévisible."},
-                {titre:"ARTICLE 20 – JURIDICTION", texte:"Tout litige relève des tribunaux de Rabat – Salé – Témara."},
-                {titre:"ARTICLE 21 – ACCEPTATION", texte:"La signature vaut acceptation totale et engagement irrévocable."}
-            ];
-
-            let articlesHtml = '';
-            for (let art of articles) {
-                articlesHtml += `<div style="margin-bottom:1rem; break-inside:avoid;"><div style="font-weight:bold; font-size:12.5pt; margin:0.6rem 0 0.2rem;">${art.titre}</div><div style="text-align:justify; line-height:1.35;">${art.texte}</div></div>`;
-            }
-
-            // Schéma SVG (identique à votre code)
-            const schemaVoiture = `
-            <svg viewBox="0 0 500 280" style="width:100%; max-width:450px; margin:0 auto; display:block; background:#fafafa; border:1px solid #ccc; border-radius:12px;">
-                <defs><style>.label { font-family: Arial; font-size: 9px; fill: #333; } .damage { fill: #ffcccc; stroke: #b00; stroke-width: 0.8; }</style></defs>
-                <rect x="100" y="70" width="300" height="120" rx="18" ry="18" fill="#e0e7f0" stroke="#2c3e5c" stroke-width="2.5" />
-                <rect x="130" y="50" width="240" height="30" rx="8" fill="#cdd9e9" stroke="#2c3e5c" stroke-width="2" />
-                <rect x="130" y="180" width="240" height="28" rx="8" fill="#cdd9e9" stroke="#2c3e5c" stroke-width="2" />
-                <polygon points="140,85 360,85 340,105 160,105" fill="#a7c0dd" stroke="#1f3a5f" stroke-width="1.8" />
-                <rect x="105" y="85" width="30" height="60" rx="4" fill="#a7c0dd" stroke="#1f3a5f" stroke-width="1.5" />
-                <rect x="365" y="85" width="30" height="60" rx="4" fill="#a7c0dd" stroke="#1f3a5f" stroke-width="1.5" />
-                <rect x="145" y="85" width="60" height="50" rx="6" fill="#b8d0f0" stroke="#1f3a5f" stroke-width="1.2" />
-                <rect x="295" y="85" width="60" height="50" rx="6" fill="#b8d0f0" stroke="#1f3a5f" stroke-width="1.2" />
-                <rect x="170" y="85" width="160" height="90" rx="6" fill="#d4e4fc" stroke="#2c3e5c" stroke-width="1.2" stroke-dasharray="3 2" />
-                <circle cx="160" cy="195" r="22" fill="#2b2b2b" stroke="#111" stroke-width="2" />
-                <circle cx="340" cy="195" r="22" fill="#2b2b2b" stroke="#111" stroke-width="2" />
-                <circle cx="160" cy="195" r="10" fill="#555" />
-                <circle cx="340" cy="195" r="10" fill="#555" />
-                <rect x="105" y="75" width="18" height="14" rx="4" fill="#FFE484" stroke="#b87c00" stroke-width="1" />
-                <rect x="377" y="75" width="18" height="14" rx="4" fill="#FFE484" stroke="#b87c00" stroke-width="1" />
-                <rect x="105" y="170" width="18" height="12" rx="3" fill="#E34234" stroke="#8b0000" stroke-width="1" />
-                <rect x="377" y="170" width="18" height="12" rx="3" fill="#E34234" stroke="#8b0000" stroke-width="1" />
-                <text x="20" y="35" class="label" font-weight="bold">Cochez les dégâts :</text>
-                <rect x="20" y="45" width="12" height="12" fill="white" stroke="#333" stroke-width="1.2" /><text x="38" y="56" class="label">Avant (capot, phares)</text>
-                <rect x="180" y="45" width="12" height="12" fill="white" stroke="#333" stroke-width="1.2" /><text x="198" y="56" class="label">Arrière (hayon, feux)</text>
-                <rect x="340" y="45" width="12" height="12" fill="white" stroke="#333" stroke-width="1.2" /><text x="358" y="56" class="label">Côté gauche</text>
-                <rect x="20" y="68" width="12" height="12" fill="white" stroke="#333" stroke-width="1.2" /><text x="38" y="79" class="label">Côté droit</text>
-                <rect x="180" y="68" width="12" height="12" fill="white" stroke="#333" stroke-width="1.2" /><text x="198" y="79" class="label">Toit / pare-brise</text>
-                <rect x="340" y="68" width="12" height="12" fill="white" stroke="#333" stroke-width="1.2" /><text x="358" y="79" class="label">Roues / pneus</text>
-                <text x="250" y="230" class="label" text-anchor="middle" fill="#555">▸ Schéma indicatif – entourez ou cochez les zones endommagées ◂</text>
-            </svg>
-            `;
-
-            // Page 2 avec schéma
-            const page2Html = `
-            <div class="page verso" style="page-break-before: always;">
-                <div class="watermark">ABDERCAR - CONFIDENTIEL</div>
-                <div class="content">
-                    <div style="text-align: center; margin-bottom: 15px;">
-                        <h2 style="font-size: 22pt;">Abder Car</h2>
-                        <p>Location de voitures & Services</p>
-                        <hr style="width: 50%; margin: 6px auto;">
-                        <h3>CONTRAT N° ${contratId.slice(-8)}</h3>
+        // Construction de la page 1 (recto) : infos + signatures
+        const page1Html = `
+            <div class="page recto">
+                <div class="header">
+                    <h1>ABDERCAR – LOCATION DE VÉHICULES</h1>
+                    <p>N°291 Groupe Al Ahd, Hay Nahda 1, Rabat<br>Tél : 0619 81 13 13 / 0663 00 73 72 - contact@abdercar.ma</p>
+                    <p>RC:111305 - IF:3374473 - CNSS:4496479 - PATENTE:25909585</p>
+                </div>
+                <div class="title">CONTRAT DE LOCATION N° ${contratId.slice(-8)}</div>
+                
+                <div class="section">
+                    <h3>IDENTITÉ DU CLIENT</h3>
+                    <div class="info-grid">
+                        <div><strong>Nom / Raison sociale :</strong> ${nom}</div>
+                        <div><strong>CIN / ICE :</strong> ${cin}</div>
+                        <div><strong>Adresse :</strong> ${adresse}</div>
+                        <div><strong>Téléphone :</strong> ${telephone}</div>
+                        <div><strong>Permis n° :</strong> ${permis}</div>
                     </div>
+                    ${deuxieme ? `
+                    <h3 style="margin-top:1rem;">DEUXIÈME CONDUCTEUR</h3>
+                    <div class="info-grid">
+                        <div><strong>Nom :</strong> ${deuxieme.nom || ""}</div>
+                        <div><strong>CIN :</strong> ${deuxieme.cin || ""}</div>
+                        <div><strong>Téléphone :</strong> ${deuxieme.telephone || ""}</div>
+                        <div><strong>Permis :</strong> ${deuxieme.permis || ""}</div>
+                        <div><strong>Adresse :</strong> ${deuxieme.adresse || ""}</div>
+                    </div>` : ''}
+                </div>
 
-                    <div class="verso-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.8rem;">
-                        <div>
-                            <div style="font-weight: bold; font-size: 13pt;">CONDUCTEUR LOCATAIRE</div>
-                            <div><strong>Nom :</strong> ${safeLoc}</div>
-                            <div><strong>CIN :</strong> ${safeCin}</div>
-                            <div><strong>Adresse :</strong> ${safeAdresse}</div>
-                            <div><strong>Permis n° :</strong> ${safePermis}</div>
-                            <div><strong>Mobile :</strong> ${safeMobile}</div>
-                            <div style="margin:12px 0;"><hr></div>
-                            <div style="font-weight: bold; font-size: 13pt;">DEUXIÈME CONDUCTEUR</div>
-                            <div><strong>Nom :</strong> ${safeDeuxNom}</div>
-                            <div><strong>CIN :</strong> ${safeDeuxCin}</div>
-                            <div><strong>Adresse :</strong> ${safeDeuxAdresse}</div>
-                            <div><strong>Permis :</strong> ${safeDeuxPermis}</div>
-                            <div><strong>Mobile :</strong> ${safeDeuxMobile}</div>
-                            <div style="margin:15px 0;"><hr></div>
-                            <div style="font-weight: bold; font-size: 13pt;">CONDITIONS</div>
-                            <ol style="margin-left:20px; font-size:10pt;">
-                                <li>En cas de confiscation du véhicule, le locataire paie tous les frais.</li>
-                                <li>En cas d’accident, le locataire est responsable (réparations + immobilisation).</li>
-                                <li>Prolongation uniquement sur autorisation écrite.</li>
-                                <li>Location mensuelle : paiement tous les 10 jours.</li>
-                                <li>La journée de location = 24h.</li>
-                                <li>Contacter l’agence 3h avant le retour.</li>
-                                <li>Dernier délai retour : 18h00. Je déclare avoir lu et accepté.</li>
-                            </ol>
-                        </div>
-
-                        <div>
-                            <div style="font-weight: bold; font-size: 13pt;">VÉHICULE</div>
-                            <div><strong>Modèle :</strong> ${safeVehicule}</div>
-                            <div><strong>Matricule :</strong> ${safeMatricule}</div>
-                            <div><strong>Carburant :</strong> _______________</div>
-
-                            <div style="margin:12px 0;"><strong>DÉPART / RETOUR</strong></div>
-                            <table style="width:100%; border-collapse:collapse; border:1px solid #000;">
-                                <thead><tr style="background:#eee;"><th style="border:1px solid #000;">Départ</th><th style="border:1px solid #000;">Retour</th></tr></thead>
-                                <tbody>
-                                    <tr><td style="border:1px solid #000;">Agence : ${safeAgenceDepart}</td><td style="border:1px solid #000;">Agence : ${safeAgenceRetour}</td></tr>
-                                    <tr><td style="border:1px solid #000;">Date : ${safeDebut}</td><td style="border:1px solid #000;">Date : ${safeFin}</td></tr>
-                                    <tr><td style="border:1px solid #000;">Heure : ${safeHeureDepart}</td><td style="border:1px solid #000;">Heure : ${safeHeureRetour}</td></tr>
-                                    <tr><td style="border:1px solid #000;">Lieu : ${safeLieuDepart}</td><td style="border:1px solid #000;">Lieu : ${safeLieuRetour}</td></tr>
-                                    <tr><td style="border:1px solid #000;">Km : ${safeKm}</td><td style="border:1px solid #000;">Km : _______________</td></tr>
-                                </tbody>
-                            </table>
-
-                            <div style="margin:12px 0;"><strong>CHANGEMENT DE VÉHICULE</strong></div>
-                            <div><strong>Modèle :</strong> ${safeChangementModele}</div>
-                            <div><strong>Matricule :</strong> ${safeChangementMatricule}</div>
-                            <div><strong>Km :</strong> ${safeChangementKm}</div>
-                            <div style="font-size:9pt; color:#555;">(À remplir en cas de substitution)</div>
-
-                            <div style="margin:12px 0;"><strong>PROLONGATION</strong></div>
-                            <div><strong>Du :</strong> ${safeProDebut} &nbsp;&nbsp;&nbsp; <strong>Au :</strong> ${safeProFin}</div>
-                            <div><strong>Lieu départ :</strong> ${safeLieuProDepart}</div>
-                            <div><strong>Lieu retour :</strong> ${safeLieuProRetour}</div>
-                            <div><strong>Frais :</strong> ${safeFraisLivraison}</div>
-
-                            <div style="margin: 18px 0 10px;">
-                                <div style="font-weight: bold; font-size: 13pt; background: #e9e9e9; padding: 4px 8px;">FICHE ÉTAT DU VÉHICULE – Vue du dessus</div>
-                                <div style="text-align: center;">${schemaVoiture}</div>
-                                <div style="margin-top: 10px;"><strong>Observations :</strong> ${safeObservations}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style="margin-top: 20px;">
-                        <div style="display: flex; justify-content: space-between;">
-                            <div><strong>Mode de règlement :</strong> ${modeReg}</div>
-                            <div><em>Ce contrat ne vaut pas facture</em></div>
-                        </div>
-                        <div style="margin-top: 20px; text-align: right; border-top: 1px solid #aaa; padding-top: 12px;">
-                            Signature du Client : _________________________
-                        </div>
-                        <div class="footer" style="font-size: 8pt; text-align: center; margin-top: 15px;">
-                            Fait à Rabat, le ${today}
-                        </div>
+                <div class="section">
+                    <h3>VÉHICULE</h3>
+                    <div class="info-grid">
+                        <div><strong>Marque / Modèle :</strong> ${vehicule.marque} ${vehicule.modele}</div>
+                        <div><strong>Immatriculation :</strong> ${vehicule.immatriculation}</div>
+                        <div><strong>Carburant départ :</strong> ${contrat.niveauCarburant || "Plein"}</div>
+                        <div><strong>État livraison :</strong> ${contrat.etatLivraison || "Très bon état"}</div>
+                        <div><strong>Km départ :</strong> ${contrat.kmDepart || "---"}</div>
                     </div>
                 </div>
+
+                <div class="section">
+                    <h3>DÉTAILS DE LA LOCATION</h3>
+                    <table class="details-table">
+                        <tr><td><strong>Date départ :</strong></td><td>${debut.toLocaleDateString()}</td><td><strong>Date fin :</strong></td><td>${fin.toLocaleDateString()}</td></tr>
+                        <tr><td><strong>Lieu départ :</strong></td><td>${contrat.lieuDepart || "Rabat"}</td><td><strong>Lieu retour :</strong></td><td>${contrat.lieuRetour || "Rabat"}</td></tr>
+                        <tr><td><strong>Nombre de jours :</strong></td><td>${nbJours}</td><td><strong>Prix journalier (HT) :</strong></td><td>${prixJournalier} DH</td></tr>
+                        <tr><td><strong>Montant HT :</strong></td><td>${contrat.montant.toFixed(2)} DH</td><td><strong>TVA 20% :</strong></td><td>${tva.toFixed(2)} DH</td></tr>
+                        <tr><td><strong>Total TTC :</strong></td><td><strong>${totalTTC.toFixed(2)} DH</strong></td><td><strong>Avance / Caution :</strong></td><td>${caution} DH</td></tr>
+                        <tr><td><strong>Reste à payer :</strong></td><td colspan="3">${(totalTTC - caution).toFixed(2)} DH</td></tr>
+                    </table>
+                </div>
+
+                <div class="signatures">
+                    <div>Signature du Locataire : <span class="sign-line">_________________________</span></div>
+                    <div>Signature du Loueur (ABDERCAR) : <span class="sign-line">_________________________</span></div>
+                </div>
+                <div class="footer">Fait à Rabat, le ${new Date().toLocaleDateString()}</div>
             </div>
-            `;
+        `;
 
-            return `<!DOCTYPE html>
-            <html>
-            <head><meta charset="UTF-8"><title>Contrat ABDERCAR</title>
-            <style>
-                * { margin:0; padding:0; box-sizing:border-box; }
-                body { background:white; font-family:'Times New Roman',Times,serif; font-size:11pt; line-height:1.4; }
-                .page { position:relative; width:100%; padding:2.5cm 2.5cm; page-break-after:always; min-height:100vh; }
-                .watermark { position:absolute; top:35%; left:8%; transform:rotate(315deg); font-size:80px; font-weight:bold; font-family:Arial; color:#bac8dc; opacity:0.2; white-space:nowrap; pointer-events:none; letter-spacing:5px; }
-                .content { position:relative; z-index:2; }
-                h1 { font-size:20pt; text-align:center; margin-bottom:6px; }
-                .adresse { text-align:center; font-size:10.5pt; border-bottom:1px solid #aaa; padding-bottom:12px; margin-bottom:18px; }
-                .parties { margin:12px 0 16px; }
-                .colonne-journal { column-count:2; column-gap:2rem; column-rule:1px solid #ccc; text-align:justify; margin-bottom:20px; }
-                .full-width { clear:both; margin-top:20px; }
-                .signature { display:flex; justify-content:space-between; margin:25px 0 10px; }
-                .footer { border-top:1px dashed #888; padding-top:12px; margin-top:10px; text-align:center; font-size:9pt; }
-                @media print { .page { padding:2.5cm; } .watermark { opacity:0.2; } }
-                .verso-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.8rem; }
-                @media (max-width:700px) { .verso-grid { grid-template-columns:1fr; } .colonne-journal { column-count:1; } }
-                table, th, td { border-collapse:collapse; }
-            </style>
-            </head>
-            <body>
-                <div class="page recto">
-                    <div class="watermark">ABDERCAR - CONFIDENTIEL</div>
-                    <div class="content">
-                        <h1>ABDERCAR – CONTRAT DE LOCATION DE VÉHICULES</h1>
-                        <div class="adresse">N°291 Groupe Al Ahd, Hay Nahda 1, Rabat<br>Tél : 0619 81 13 13 / 0663 00 73 72 – contact@abdercar.ma</div>
-                        <div class="parties"><strong>Entre le Loueur (ABDERCAR)</strong> et <strong>le Locataire : ${safeLoc}</strong>, permis ${safePermis}, CIN ${safeCin}.<br>Véhicule : <strong>${safeVehicule} (${safeMatricule})</strong> – du ${safeDebut} au ${safeFin} – Caution : ${safeCaution} MAD.</div>
-                        <div class="colonne-journal">${articlesHtml}</div>
-                        <div class="full-width"><div class="signature"><span>Signature Locataire : _________________________</span><span>Signature Loueur : _________________________</span></div><div class="footer">Rabat, le ${today}<br>Le locataire accepte les 21 articles.</div></div>
-                    </div>
+        // Page 2 (verso) : conditions générales
+        const page2Html = `
+            <div class="page verso" style="page-break-before: always;">
+                <div class="header">
+                    <h2>CONDITIONS GÉNÉRALES DE LOCATION</h2>
                 </div>
-                ${page2Html}
-            </body>
-            </html>`;
-        }
+                <div class="articles-columns">
+                    ${articlesHtml}
+                </div>
+                <div class="footer">Le locataire reconnaît avoir pris connaissance et accepté les présentes conditions.</div>
+            </div>
+        `;
 
-        // Préparer les données
-        const debutStr = debut.toLocaleDateString('fr-FR');
-        const finStr = fin.toLocaleDateString('fr-FR');
-        const vehiculeNomComplet = `${vehicule.marque} ${vehicule.modele}`;
-        const cautionStr = caution.toString();
+        const fullHtml = `<!DOCTYPE html>
+        <html>
+        <head><meta charset="UTF-8"><title>Contrat ABDERCAR</title>
+        <style>
+            * { margin:0; padding:0; box-sizing:border-box; }
+            body { background:white; font-family:'Times New Roman', Times, serif; font-size:11pt; line-height:1.3; }
+            .page { width:100%; padding:2cm; position:relative; page-break-after:always; }
+            .header { text-align:center; margin-bottom:1.5rem; border-bottom:1px solid #aaa; padding-bottom:0.5rem; }
+            .header h1 { font-size:22pt; margin-bottom:5px; }
+            .header h2 { font-size:18pt; }
+            .title { font-size:16pt; font-weight:bold; text-align:center; margin:1rem 0; }
+            .section { margin:1.5rem 0; }
+            .section h3 { background:#1a3a6c; color:white; padding:6px; font-size:12pt; border-radius:4px; }
+            .info-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; margin-top:0.5rem; }
+            .details-table { width:100%; border-collapse:collapse; margin-top:0.5rem; }
+            .details-table td { padding:0.4rem; border-bottom:1px solid #ddd; }
+            .signatures { margin-top:2rem; display:flex; justify-content:space-between; }
+            .sign-line { border-bottom:1px solid black; display:inline-block; width:200px; margin-left:10px; }
+            .footer { text-align:center; margin-top:1.5rem; font-size:9pt; border-top:1px solid #ccc; padding-top:0.5rem; }
+            .articles-columns { column-count:2; column-gap:2rem; text-align:justify; margin:1rem 0; }
+            @media print { .page { padding:2cm; } }
+        </style>
+        </head>
+        <body>
+            ${page1Html}
+            ${page2Html}
+        </body>
+        </html>`;
 
-        const contratHtml = genererContratRectoVerso(
-            nom, cin, permis, telephone, adresse,
-            vehiculeNomComplet, vehicule.immatriculation, debutStr, finStr, cautionStr, kmDepart,
-            "", "", "", "", "",   // deuxième conducteur (vide)
-            contrat.lieuDepart || "Rabat", contrat.lieuRetour || "Rabat", "10:00", "10:00",
-            contrat.lieuDepart || "Rabat", contrat.lieuRetour || "Rabat",
-            "", "", "", "", "", "", "", modeReglement, ""
-        );
-
-        // Ouvrir une nouvelle fenêtre pour impression/PDF
         const win = window.open('', '_blank', 'width=1000,height=800');
         if (!win) { alert("Autorisez les popups pour générer le PDF"); return; }
-        win.document.write(contratHtml);
+        win.document.write(fullHtml);
         win.document.close();
         win.focus();
-        win.print(); // Ouvre la boîte de dialogue d'impression -> choix "Enregistrer en PDF"
+        win.print();
     }
 
-    // Authentication
+    // Auth
     onAuthStateChanged(auth, async (user) => {
         if (!user) { window.location.href = "index.html"; return; }
         currentUser = user;
@@ -552,4 +485,4 @@
     document.getElementById('logoutBtn').onclick = () => signOut(auth);
 </script>
 </body>
-                                                            </html>
+                                              </html>
