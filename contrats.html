@@ -39,15 +39,12 @@
     </div>
 </div>
 
-<!-- MODAL CONTRAT (avec deuxième conducteur) -->
+<!-- MODAL CONTRAT (identique à la version validée) -->
 <div id="contratModal" style="display: none; position: fixed; inset:0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; overflow-y: auto; padding: 20px;">
     <div style="background: white; max-width: 800px; width: 100%; border-radius: 20px; padding: 1.5rem; margin: auto;">
         <h3 class="mb-3">Nouveau contrat</h3>
         <div class="form-group"><label>Véhicule *</label><select id="contratVehiculeId" class="form-control"></select></div>
-        
         <div class="form-group"><label>Type client</label><select id="clientType" class="form-control"><option value="particulier">Particulier</option><option value="societe">Société</option></select></div>
-        
-        <!-- Conducteur principal -->
         <div id="particulierFields">
             <h4>Conducteur principal</h4>
             <div class="two-col-form">
@@ -72,20 +69,16 @@
                 <div><label>Personne de contact</label><input id="societeContact" class="form-control"></div>
             </div>
         </div>
-        
-        <!-- Deuxième conducteur (optionnel) -->
         <div style="margin-top: 1rem;">
             <h4>Deuxième conducteur (optionnel)</h4>
-            <div class="two-col-form" id="deuxiemeConducteurFields">
+            <div class="two-col-form">
                 <div><label>Nom complet</label><input id="deuxiemeNom" class="form-control"></div>
                 <div><label>CIN</label><input id="deuxiemeCin" class="form-control"></div>
                 <div><label>Téléphone</label><input id="deuxiemeTel" class="form-control"></div>
                 <div><label>Permis n°</label><input id="deuxiemePermis" class="form-control"></div>
-                <div><label>Adresse</label><input id="deuxiemeAdresse" class="form-control" colspan="2"></div>
+                <div><label>Adresse</label><input id="deuxiemeAdresse" class="form-control"></div>
             </div>
         </div>
-        
-        <!-- Détails location -->
         <h4>Période et tarifs</h4>
         <div class="two-col-form">
             <div><label>Date début *</label><input id="contratDebut" type="date" class="form-control"></div>
@@ -100,7 +93,6 @@
             <div><label>État livraison</label><input id="etatLivraison" class="form-control" value="Très bon état"></div>
             <div><label>État retour</label><input id="etatRetour" class="form-control"></div>
         </div>
-        
         <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem;">
             <button id="closeContratModal" class="btn btn-secondary">Annuler</button>
             <button id="saveContrat" class="btn btn-primary">Enregistrer contrat</button>
@@ -128,7 +120,7 @@
     let currentUser = null;
     let vehiculesList = [];
 
-    // MODAL LOGIC
+    // Gestion du modal (identique)
     const modal = document.getElementById('contratModal');
     const openBtn = document.getElementById('openContratModalBtn');
     const closeBtn = document.getElementById('closeContratModal');
@@ -149,7 +141,7 @@
 
     openBtn.onclick = () => {
         if (vehiculesList.length === 0) { alert("Ajoutez d'abord un véhicule."); return; }
-        // Reset all fields (identique à avant)
+        // Reset fields (trop long, mais similaire à avant)...
         document.getElementById('contratVehiculeId').value = '';
         document.getElementById('conducteurCin').value = '';
         document.getElementById('conducteurNom').value = '';
@@ -200,14 +192,7 @@
             const cin = document.getElementById('conducteurCin').value.trim();
             const nom = document.getElementById('conducteurNom').value.trim();
             if (!cin || !nom) { alert("CIN et nom du conducteur principal requis"); return; }
-            clientInfo = {
-                type: 'particulier',
-                cin, nom,
-                telephone: document.getElementById('conducteurTel').value,
-                email: document.getElementById('conducteurEmail').value,
-                adresse: document.getElementById('conducteurAdresse').value,
-                permis: document.getElementById('conducteurPermis').value
-            };
+            clientInfo = { type: 'particulier', cin, nom, telephone: document.getElementById('conducteurTel').value, email: document.getElementById('conducteurEmail').value, adresse: document.getElementById('conducteurAdresse').value, permis: document.getElementById('conducteurPermis').value };
         } else {
             const raison = document.getElementById('societeRaison').value.trim();
             const ice = document.getElementById('societeICE').value.trim();
@@ -217,13 +202,8 @@
             const email = document.getElementById('societeEmail').value.trim();
             const tel = document.getElementById('societeTel').value.trim();
             if (!raison || !ice || !ifs || !rc || !adresse || !email || !tel) { alert("Tous les champs société requis"); return; }
-            clientInfo = {
-                type: 'societe',
-                raisonSociale: raison, ice, if: ifs, rc, adresse, email, telephone: tel,
-                contact: document.getElementById('societeContact').value
-            };
+            clientInfo = { type: 'societe', raisonSociale: raison, ice, if: ifs, rc, adresse, email, telephone: tel, contact: document.getElementById('societeContact').value };
         }
-        
         const deuxiemeNom = document.getElementById('deuxiemeNom').value.trim();
         const deuxiemeConducteur = deuxiemeNom ? {
             nom: deuxiemeNom,
@@ -234,12 +214,8 @@
         } : null;
 
         const contratData = {
-            vehiculeId,
-            clientInfo,
-            deuxiemeConducteur,
-            debut: new Date(debut),
-            fin: new Date(fin),
-            montant,
+            vehiculeId, clientInfo, deuxiemeConducteur,
+            debut: new Date(debut), fin: new Date(fin), montant,
             avance: Number(document.getElementById('contratAvance').value) || 0,
             lieuDepart: document.getElementById('lieuDepart').value,
             lieuRetour: document.getElementById('lieuRetour').value,
@@ -248,10 +224,7 @@
             niveauCarburant: document.getElementById('niveauCarburant').value,
             etatLivraison: document.getElementById('etatLivraison').value,
             etatRetour: document.getElementById('etatRetour').value,
-            userId: currentUser.uid,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            statut: "actif"
+            userId: currentUser.uid, createdAt: new Date(), updatedAt: new Date(), statut: "actif"
         };
         try {
             await addDoc(collection(db, "contrats"), contratData);
@@ -301,7 +274,7 @@
         document.querySelectorAll('.downloadPdf').forEach(btn => btn.onclick = () => genererPDFContrat(btn.dataset.id));
     }
 
-    // ========== GÉNÉRATION PDF SUR 2 PAGES ==========
+    // ========== GÉNÉRATION PDF (2 pages, avec articles complets et variables personnalisées) ==========
     async function genererPDFContrat(contratId) {
         const contratDoc = await getDoc(doc(db, "contrats", contratId));
         if (!contratDoc.exists()) { alert("Contrat introuvable"); return; }
@@ -335,33 +308,33 @@
             adresse = client.adresse;
         }
         
-        // Articles (conditions générales) - version complète mais concise pour tenir sur une page
+        // Articles complets avec insertion des variables (comme dans la version validée)
         const articles = [
-            "ARTICLE 1 – OBJET : Location d’un véhicule par ABDERCAR au client.",
-            "ARTICLE 2 – FORMATION : Signature = acceptation sans réserve.",
-            "ARTICLE 3 – CONDUCTEURS : Seuls les conducteurs autorisés. Conducteur principal : "+nom+" (permis "+permis+")"+(deuxieme ? ", 2ème conducteur : "+deuxieme.nom : ""),
-            "ARTICLE 4 – UTILISATION : Interdiction formelle (usage illégal, sous-location, compétition, sortie du Maroc).",
-            "ARTICLE 5 – ÉTAT : Véhicule remis en bon état. Kilométrage départ : "+kmDepart+" km.",
-            "ARTICLE 6 – ENTRETIEN : Locataire responsable des vérifications (huile, eau, pneus).",
-            "ARTICLE 7 – DURÉE : Du "+debut.toLocaleDateString()+" au "+fin.toLocaleDateString()+". Toute prolongation nécessite accord écrit.",
-            "ARTICLE 8 – RESTITUTION : Retour à la date/heure prévue, avec même niveau carburant.",
-            "ARTICLE 9 – CLAUSE ESSENTIELLE : ABDERCAR conserve ses droits après restitution.",
-            "ARTICLE 10 – DÉPÔT DE GARANTIE : Caution de "+caution+" MAD, utilisable pour dommages, retards.",
-            "ARTICLE 11 – ASSURANCE : Véhicule assuré. Franchise et exclusions à charge locataire.",
-            "ARTICLE 12 – ACCIDENT : Déclaration immédiate. Interdiction de négocier avec tiers.",
-            "ARTICLE 13 – PANNES : Panne normale → loueur ; mauvaise utilisation → locataire.",
-            "ARTICLE 14 – AMENDES : À la charge du locataire.",
-            "ARTICLE 15 – NETTOYAGE : Véhicule rendu propre, sinon facturation.",
-            "ARTICLE 16 – PREUVE : Contrat, fiche état, photos, messages WhatsApp font foi.",
-            "ARTICLE 17 – DETTE : Pénalité de 20% en cas de non-paiement.",
-            "ARTICLE 18 – RÉSILIATION : En cas de non-respect, résiliation immédiate.",
-            "ARTICLE 19 – FORCE MAJEURE : Non-responsabilité du loueur.",
-            "ARTICLE 20 – JURIDICTION : Tribunaux de Rabat.",
-            "ARTICLE 21 – ACCEPTATION : Signature vaut acceptation totale."
+            {titre:"ARTICLE 1 – OBJET DU CONTRAT", texte:"Le présent contrat a pour objet la location d’un véhicule par la société ABDERCAR, ci-après dénommée « le Loueur », au profit du client, ci-après dénommé « le Locataire ». La location est strictement personnelle, temporaire et non transmissible."},
+            {titre:"ARTICLE 2 – FORMATION DU CONTRAT", texte:"Le contrat est formé dès signature par les parties et remise du véhicule. 👉 La signature vaut : acceptation sans réserve, reconnaissance de l’état du véhicule, engagement à respecter toutes les clauses."},
+            {titre:"ARTICLE 3 – CONDUCTEURS AUTORISÉS", texte:`Seuls les conducteurs mentionnés au contrat sont autorisés à conduire le véhicule. Le locataire reste pleinement responsable, même si un tiers conduit. ❗ Toute conduite non autorisée entraîne : exclusion d’assurance, responsabilité totale du locataire. Conducteur principal : ${nom} (permis ${permis}).${deuxieme ? `\nDeuxième conducteur : ${deuxieme.nom} (permis ${deuxieme.permis || "non renseigné"})` : ""}`},
+            {titre:"ARTICLE 4 – UTILISATION DU VÉHICULE", texte:"Le locataire s’engage à utiliser le véhicule conformément à sa destination. Il est strictement interdit : d’utiliser le véhicule à des fins illégales, de transporter des passagers à titre onéreux, de participer à des courses ou essais, de circuler hors routes carrossables, de sortir le véhicule du territoire marocain, de sous-louer ou céder le véhicule. 👉 En cas de violation : résiliation immédiate + poursuites possibles."},
+            {titre:"ARTICLE 5 – ÉTAT DU VÉHICULE", texte:`Le véhicule est remis en bon état apparent et de fonctionnement. La fiche état + photos font foi juridiquement. 👉 Toute absence de réserve = acceptation définitive. Le locataire doit restituer le véhicule dans le même état (hors usure normale). Kilométrage départ : ${kmDepart} km.`},
+            {titre:"ARTICLE 6 – ENTRETIEN ET UTILISATION TECHNIQUE", texte:"Le locataire doit : vérifier huile, eau, pression pneus, utiliser carburant adapté, respecter les alertes du véhicule. 👉 Toute négligence engage sa responsabilité totale."},
+            {titre:"ARTICLE 7 – DURÉE – PROLONGATION", texte:`La location est conclue pour une durée déterminée du ${debut.toLocaleDateString()} au ${fin.toLocaleDateString()}. Toute prolongation nécessite accord écrit et doit être payée à l’avance. 👉 À défaut : abus de confiance (poursuites pénales possibles).`},
+            {titre:"ARTICLE 8 – RESTITUTION DU VÉHICULE", texte:`Le véhicule doit être restitué à la date prévue (${fin.toLocaleDateString()}), au lieu convenu, avec le même niveau de carburant, dans le même état. 👉 Toute journée commencée est due. 👉 Tout retard = facturation + indemnité.`},
+            {titre:"ARTICLE 9 – CLAUSE ESSENTIELLE (DROITS DU LOUEUR)", texte:"La restitution du véhicule ne constitue ni quitus, ni règlement, ni renonciation aux droits du Loueur. Le locataire reste redevable de : dommages constatés après restitution, franchise assurance, frais cachés ou différés, amendes reçues ultérieurement. 👉 ABDERCAR conserve un droit de poursuite TOTAL même après restitution."},
+            {titre:"ARTICLE 10 – DÉPÔT DE GARANTIE", texte:`Un dépôt de garantie d’un montant de ${caution} MAD est exigé. Il sert à couvrir : dommages, franchise, retards, frais divers. Le loueur peut : 👉 retenir partiellement ou totalement la caution, sans autorisation préalable du locataire.`},
+            {titre:"ARTICLE 11 – ASSURANCE", texte:"Le véhicule est assuré conformément à la loi marocaine. ❗ Restent à la charge du locataire : franchise, dommages non couverts, faute grave. ❗ Exclusions : alcool / drogue, conducteur non autorisé, absence de permis, négligence."},
+            {titre:"ARTICLE 12 – ACCIDENT / SINISTRE", texte:"Le locataire doit prévenir immédiatement le loueur, déclarer aux autorités, fournir constat. ❗ Interdiction : reconnaître sa responsabilité, négocier avec tiers."},
+            {titre:"ARTICLE 13 – PANNES ET IMMOBILISATION", texte:"Panne normale → loueur. Mauvaise utilisation → locataire. 👉 Immobilisation imputable au locataire : facturation journalière complète."},
+            {titre:"ARTICLE 14 – AMENDES ET INFRACTIONS", texte:"Le locataire est seul responsable de : amendes, PV, infractions. 👉 Le loueur peut : payer et refacturer, ou transmettre aux autorités."},
+            {titre:"ARTICLE 15 – NETTOYAGE", texte:"Le véhicule doit être rendu propre. 👉 Nettoyage exceptionnel facturé."},
+            {titre:"ARTICLE 16 – PREUVE", texte:"Font foi : contrat signé, fiche état, photos, messages (WhatsApp, email). Preuve électronique reconnue."},
+            {titre:"ARTICLE 17 – DETTE ET RECOUVREMENT", texte:"Toute somme due est certaine, liquide et exigible. En cas de non-paiement : mise en demeure, pénalité 20 %, poursuites judiciaires."},
+            {titre:"ARTICLE 18 – RÉSILIATION", texte:"Le loueur peut résilier immédiatement en cas de non-respect, danger ou fraude."},
+            {titre:"ARTICLE 19 – FORCE MAJEURE", texte:"Le loueur n’est pas responsable en cas de catastrophe, blocage administratif, événement imprévisible."},
+            {titre:"ARTICLE 20 – JURIDICTION", texte:"Tout litige relève des tribunaux de Rabat – Salé – Témara."},
+            {titre:"ARTICLE 21 – ACCEPTATION", texte:"La signature vaut acceptation totale et engagement irrévocable."}
         ];
-        const articlesHtml = `<div class="articles">${articles.map(a => `<p>${a}</p>`).join('')}</div>`;
+        const articlesHtml = articles.map(art => `<div style="margin-bottom:1rem;"><div style="font-weight:bold;">${art.titre}</div><div style="text-align:justify;">${art.texte}</div></div>`).join('');
 
-        // Construction des deux pages
+        // PAGE 1 : Informations client, véhicule, détails location, signatures
         const page1Html = `
             <div class="page recto">
                 <div class="header">
@@ -370,7 +343,6 @@
                     <p>RC:111305 - IF:3374473 - CNSS:4496479 - PATENTE:25909585</p>
                 </div>
                 <div class="title">CONTRAT DE LOCATION N° ${contratId.slice(-8)}</div>
-                
                 <div class="section">
                     <h3>IDENTITÉ DU CLIENT</h3>
                     <div class="info-grid">
@@ -390,7 +362,6 @@
                         <div><strong>Adresse :</strong> ${deuxieme.adresse || ""}</div>
                     </div>` : ''}
                 </div>
-
                 <div class="section">
                     <h3>VÉHICULE</h3>
                     <div class="info-grid">
@@ -401,7 +372,6 @@
                         <div><strong>Km départ :</strong> ${contrat.kmDepart || "---"}</div>
                     </div>
                 </div>
-
                 <div class="section">
                     <h3>DÉTAILS DE LA LOCATION</h3>
                     <table class="details-table">
@@ -413,7 +383,6 @@
                         <tr><td colspan="2"><strong>Reste à payer :</strong> ${(totalTTC - caution).toFixed(2)} DH</td></tr>
                     </table>
                 </div>
-
                 <div class="signatures">
                     <div>Signature du Locataire : <span class="sign-line">_________________________</span></div>
                     <div>Signature du Loueur (ABDERCAR) : <span class="sign-line">_________________________</span></div>
@@ -422,14 +391,11 @@
             </div>
         `;
 
+        // PAGE 2 : conditions générales (articles complets)
         const page2Html = `
             <div class="page verso" style="page-break-before: always;">
-                <div class="header">
-                    <h2>CONDITIONS GÉNÉRALES DE LOCATION</h2>
-                </div>
-                <div class="articles-columns">
-                    ${articlesHtml}
-                </div>
+                <div class="header"><h2>CONDITIONS GÉNÉRALES DE LOCATION</h2></div>
+                <div class="articles-columns">${articlesHtml}</div>
                 <div class="footer">Le locataire reconnaît avoir pris connaissance et accepté les présentes conditions.</div>
             </div>
         `;
@@ -454,7 +420,7 @@
             .sign-line { border-bottom:1px solid black; display:inline-block; width:200px; margin-left:10px; }
             .footer { text-align:center; margin-top:1.5rem; font-size:9pt; border-top:1px solid #ccc; padding-top:0.5rem; }
             .articles-columns { column-count:2; column-gap:2rem; text-align:justify; margin:1rem 0; }
-            .articles-columns p { margin-bottom:0.5rem; }
+            .articles-columns > div { margin-bottom:1rem; break-inside:avoid; }
             @media print { .page { padding:2cm; } }
         </style>
         </head>
@@ -483,4 +449,4 @@
     document.getElementById('logoutBtn').onclick = () => signOut(auth);
 </script>
 </body>
-                </html>
+</html>
