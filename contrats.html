@@ -39,7 +39,7 @@
     </div>
 </div>
 
-<!-- MODAL CONTRAT (identique à la version validée) -->
+<!-- MODAL CONTRAT (identique à la version précédente) -->
 <div id="contratModal" style="display: none; position: fixed; inset:0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; overflow-y: auto; padding: 20px;">
     <div style="background: white; max-width: 800px; width: 100%; border-radius: 20px; padding: 1.5rem; margin: auto;">
         <h3 class="mb-3">Nouveau contrat</h3>
@@ -120,7 +120,7 @@
     let currentUser = null;
     let vehiculesList = [];
 
-    // Gestion du modal (identique)
+    // Gestion du modal (identique à la version précédente, non modifiée)
     const modal = document.getElementById('contratModal');
     const openBtn = document.getElementById('openContratModalBtn');
     const closeBtn = document.getElementById('closeContratModal');
@@ -141,38 +141,13 @@
 
     openBtn.onclick = () => {
         if (vehiculesList.length === 0) { alert("Ajoutez d'abord un véhicule."); return; }
-        // Reset fields (trop long, mais similaire à avant)...
-        document.getElementById('contratVehiculeId').value = '';
-        document.getElementById('conducteurCin').value = '';
-        document.getElementById('conducteurNom').value = '';
-        document.getElementById('conducteurTel').value = '';
-        document.getElementById('conducteurEmail').value = '';
-        document.getElementById('conducteurAdresse').value = '';
-        document.getElementById('conducteurPermis').value = '';
-        document.getElementById('societeRaison').value = '';
-        document.getElementById('societeICE').value = '';
-        document.getElementById('societeIF').value = '';
-        document.getElementById('societeRC').value = '';
-        document.getElementById('societeAdresse').value = '';
-        document.getElementById('societeEmail').value = '';
-        document.getElementById('societeTel').value = '';
-        document.getElementById('societeContact').value = '';
-        document.getElementById('deuxiemeNom').value = '';
-        document.getElementById('deuxiemeCin').value = '';
-        document.getElementById('deuxiemeTel').value = '';
-        document.getElementById('deuxiemePermis').value = '';
-        document.getElementById('deuxiemeAdresse').value = '';
-        document.getElementById('contratDebut').value = '';
-        document.getElementById('contratFin').value = '';
-        document.getElementById('contratMontant').value = '';
+        // Reset fields
+        const fields = ['contratVehiculeId','conducteurCin','conducteurNom','conducteurTel','conducteurEmail','conducteurAdresse','conducteurPermis','societeRaison','societeICE','societeIF','societeRC','societeAdresse','societeEmail','societeTel','societeContact','deuxiemeNom','deuxiemeCin','deuxiemeTel','deuxiemePermis','deuxiemeAdresse','contratDebut','contratFin','contratMontant','contratAvance','lieuDepart','lieuRetour','kmDepart','kmRetour','etatRetour'];
+        fields.forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
         document.getElementById('contratAvance').value = '0';
         document.getElementById('lieuDepart').value = 'Rabat';
-        document.getElementById('lieuRetour').value = '';
-        document.getElementById('kmDepart').value = '';
-        document.getElementById('kmRetour').value = '';
         document.getElementById('niveauCarburant').value = 'Plein';
         document.getElementById('etatLivraison').value = 'Très bon état';
-        document.getElementById('etatRetour').value = '';
         clientTypeSelect.dispatchEvent(new Event('change'));
         modal.style.display = 'flex';
     };
@@ -274,7 +249,7 @@
         document.querySelectorAll('.downloadPdf').forEach(btn => btn.onclick = () => genererPDFContrat(btn.dataset.id));
     }
 
-    // ========== GÉNÉRATION PDF (2 pages, avec articles complets et variables personnalisées) ==========
+    // ========== GÉNÉRATION PDF 2 PAGES, POLICE RÉDUITE, ARTICLES COMPLETS ==========
     async function genererPDFContrat(contratId) {
         const contratDoc = await getDoc(doc(db, "contrats", contratId));
         if (!contratDoc.exists()) { alert("Contrat introuvable"); return; }
@@ -308,7 +283,7 @@
             adresse = client.adresse;
         }
         
-        // Articles complets avec insertion des variables (comme dans la version validée)
+        // Articles complets
         const articles = [
             {titre:"ARTICLE 1 – OBJET DU CONTRAT", texte:"Le présent contrat a pour objet la location d’un véhicule par la société ABDERCAR, ci-après dénommée « le Loueur », au profit du client, ci-après dénommé « le Locataire ». La location est strictement personnelle, temporaire et non transmissible."},
             {titre:"ARTICLE 2 – FORMATION DU CONTRAT", texte:"Le contrat est formé dès signature par les parties et remise du véhicule. 👉 La signature vaut : acceptation sans réserve, reconnaissance de l’état du véhicule, engagement à respecter toutes les clauses."},
@@ -332,9 +307,9 @@
             {titre:"ARTICLE 20 – JURIDICTION", texte:"Tout litige relève des tribunaux de Rabat – Salé – Témara."},
             {titre:"ARTICLE 21 – ACCEPTATION", texte:"La signature vaut acceptation totale et engagement irrévocable."}
         ];
-        const articlesHtml = articles.map(art => `<div style="margin-bottom:1rem;"><div style="font-weight:bold;">${art.titre}</div><div style="text-align:justify;">${art.texte}</div></div>`).join('');
+        const articlesHtml = articles.map(art => `<div><strong>${art.titre}</strong><br>${art.texte}</div>`).join('');
 
-        // PAGE 1 : Informations client, véhicule, détails location, signatures
+        // Page 1 avec style en tableaux
         const page1Html = `
             <div class="page recto">
                 <div class="header">
@@ -343,35 +318,38 @@
                     <p>RC:111305 - IF:3374473 - CNSS:4496479 - PATENTE:25909585</p>
                 </div>
                 <div class="title">CONTRAT DE LOCATION N° ${contratId.slice(-8)}</div>
+                
                 <div class="section">
                     <h3>IDENTITÉ DU CLIENT</h3>
-                    <div class="info-grid">
-                        <div><strong>Nom / Raison sociale :</strong> ${nom}</div>
-                        <div><strong>CIN / ICE :</strong> ${cin}</div>
-                        <div><strong>Adresse :</strong> ${adresse}</div>
-                        <div><strong>Téléphone :</strong> ${telephone}</div>
-                        <div><strong>Permis n° :</strong> ${permis}</div>
-                    </div>
+                    <table class="info-table">
+                        <tr><td style="width:30%"><strong>Nom / Raison sociale</strong></td><td>${nom}</td></tr>
+                        <tr><td><strong>CIN / ICE</strong></td><td>${cin}</td></tr>
+                        <tr><td><strong>Adresse</strong></td><td>${adresse}</td></tr>
+                        <tr><td><strong>Téléphone</strong></td><td>${telephone}</td></tr>
+                        <tr><td><strong>Permis n°</strong></td><td>${permis}</td></tr>
+                    </table>
                     ${deuxieme ? `
-                    <h3 style="margin-top:1rem;">DEUXIÈME CONDUCTEUR</h3>
-                    <div class="info-grid">
-                        <div><strong>Nom :</strong> ${deuxieme.nom || ""}</div>
-                        <div><strong>CIN :</strong> ${deuxieme.cin || ""}</div>
-                        <div><strong>Téléphone :</strong> ${deuxieme.telephone || ""}</div>
-                        <div><strong>Permis :</strong> ${deuxieme.permis || ""}</div>
-                        <div><strong>Adresse :</strong> ${deuxieme.adresse || ""}</div>
-                    </div>` : ''}
+                    <h3 style="margin-top:0.5rem;">DEUXIÈME CONDUCTEUR</h3>
+                    <table class="info-table">
+                        <tr><td style="width:30%"><strong>Nom</strong></td><td>${deuxieme.nom || ""}</td></tr>
+                        <tr><td><strong>CIN</strong></td><td>${deuxieme.cin || ""}</td></tr>
+                        <tr><td><strong>Téléphone</strong></td><td>${deuxieme.telephone || ""}</td></tr>
+                        <tr><td><strong>Permis n°</strong></td><td>${deuxieme.permis || ""}</td></tr>
+                        <tr><td><strong>Adresse</strong></td><td>${deuxieme.adresse || ""}</td></tr>
+                    </table>` : ''}
                 </div>
+
                 <div class="section">
                     <h3>VÉHICULE</h3>
-                    <div class="info-grid">
-                        <div><strong>Marque / Modèle :</strong> ${vehicule.marque} ${vehicule.modele}</div>
-                        <div><strong>Immatriculation :</strong> ${vehicule.immatriculation}</div>
-                        <div><strong>Carburant départ :</strong> ${contrat.niveauCarburant || "Plein"}</div>
-                        <div><strong>État livraison :</strong> ${contrat.etatLivraison || "Très bon état"}</div>
-                        <div><strong>Km départ :</strong> ${contrat.kmDepart || "---"}</div>
-                    </div>
+                    <table class="info-table">
+                        <tr><td style="width:30%"><strong>Marque / Modèle</strong></td><td>${vehicule.marque} ${vehicule.modele}</td></tr>
+                        <tr><td><strong>Immatriculation</strong></td><td>${vehicule.immatriculation}</td></tr>
+                        <tr><td><strong>Carburant départ</strong></td><td>${contrat.niveauCarburant || "Plein"}</td></tr>
+                        <tr><td><strong>État livraison</strong></td><td>${contrat.etatLivraison || "Très bon état"}</td></tr>
+                        <tr><td><strong>Km départ</strong></td><td>${contrat.kmDepart || "---"}</td></tr>
+                    </table>
                 </div>
+
                 <div class="section">
                     <h3>DÉTAILS DE LA LOCATION</h3>
                     <table class="details-table">
@@ -383,6 +361,7 @@
                         <tr><td colspan="2"><strong>Reste à payer :</strong> ${(totalTTC - caution).toFixed(2)} DH</td></tr>
                     </table>
                 </div>
+
                 <div class="signatures">
                     <div>Signature du Locataire : <span class="sign-line">_________________________</span></div>
                     <div>Signature du Loueur (ABDERCAR) : <span class="sign-line">_________________________</span></div>
@@ -391,7 +370,6 @@
             </div>
         `;
 
-        // PAGE 2 : conditions générales (articles complets)
         const page2Html = `
             <div class="page verso" style="page-break-before: always;">
                 <div class="header"><h2>CONDITIONS GÉNÉRALES DE LOCATION</h2></div>
@@ -405,23 +383,24 @@
         <head><meta charset="UTF-8"><title>Contrat ABDERCAR</title>
         <style>
             * { margin:0; padding:0; box-sizing:border-box; }
-            body { background:white; font-family:'Times New Roman', Times, serif; font-size:11pt; line-height:1.3; }
-            .page { width:100%; padding:2cm; position:relative; page-break-after:always; }
-            .header { text-align:center; margin-bottom:1.5rem; border-bottom:1px solid #aaa; padding-bottom:0.5rem; }
-            .header h1 { font-size:22pt; margin-bottom:5px; }
-            .header h2 { font-size:18pt; }
-            .title { font-size:16pt; font-weight:bold; text-align:center; margin:1rem 0; }
-            .section { margin:1.2rem 0; }
-            .section h3 { background:#1a3a6c; color:white; padding:6px; font-size:12pt; border-radius:4px; }
-            .info-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; margin-top:0.5rem; }
-            .details-table { width:100%; border-collapse:collapse; margin-top:0.5rem; }
-            .details-table td { padding:0.3rem; border-bottom:1px solid #ddd; }
-            .signatures { margin-top:2rem; display:flex; justify-content:space-between; }
-            .sign-line { border-bottom:1px solid black; display:inline-block; width:200px; margin-left:10px; }
-            .footer { text-align:center; margin-top:1.5rem; font-size:9pt; border-top:1px solid #ccc; padding-top:0.5rem; }
-            .articles-columns { column-count:2; column-gap:2rem; text-align:justify; margin:1rem 0; }
-            .articles-columns > div { margin-bottom:1rem; break-inside:avoid; }
-            @media print { .page { padding:2cm; } }
+            body { background:white; font-family:'Times New Roman', Times, serif; font-size:9pt; line-height:1.2; }
+            .page { width:100%; padding:1.5cm; position:relative; page-break-after:always; }
+            .header { text-align:center; margin-bottom:0.8rem; border-bottom:1px solid #aaa; padding-bottom:0.3rem; }
+            .header h1 { font-size:18pt; margin-bottom:2px; }
+            .header h2 { font-size:14pt; }
+            .title { font-size:14pt; font-weight:bold; text-align:center; margin:0.5rem 0; }
+            .section { margin:0.6rem 0; }
+            .section h3 { background:#1a3a6c; color:white; padding:4px; font-size:10pt; border-radius:4px; }
+            .info-table { width:100%; border-collapse:collapse; }
+            .info-table td { padding:0.2rem; border-bottom:1px solid #ddd; }
+            .details-table { width:100%; border-collapse:collapse; margin-top:0.3rem; }
+            .details-table td { padding:0.2rem; border-bottom:1px solid #ddd; }
+            .signatures { margin-top:1rem; display:flex; justify-content:space-between; }
+            .sign-line { border-bottom:1px solid black; display:inline-block; width:180px; margin-left:8px; }
+            .footer { text-align:center; margin-top:1rem; font-size:7.5pt; border-top:1px solid #ccc; padding-top:0.3rem; }
+            .articles-columns { column-count:2; column-gap:1.5rem; text-align:justify; margin:0.5rem 0; }
+            .articles-columns > div { margin-bottom:0.5rem; break-inside:avoid; }
+            @media print { .page { padding:1.5cm; } }
         </style>
         </head>
         <body>
@@ -449,4 +428,4 @@
     document.getElementById('logoutBtn').onclick = () => signOut(auth);
 </script>
 </body>
-</html>
+    </html>
