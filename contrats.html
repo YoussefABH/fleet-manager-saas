@@ -248,7 +248,7 @@
         document.querySelectorAll('.downloadPdf').forEach(btn => btn.onclick = () => genererPDFContrat(btn.dataset.id));
     }
 
-    // ========== GÉNÉRATION PDF AVEC AJUSTEMENT ULTIME ==========
+    // ========== GÉNÉRATION PDF - AJUSTEMENT ULTIME POUR QUE LA DERNIÈRE LIGNE REMONTE ==========
     async function genererPDFContrat(contratId) {
         const contratDoc = await getDoc(doc(db, "contrats", contratId));
         if (!contratDoc.exists()) { alert("Contrat introuvable"); return; }
@@ -308,7 +308,7 @@
         ];
         const articlesHtml = articles.map(a => `<div><strong>${a.substring(0, a.indexOf(':'))}</strong>${a.substring(a.indexOf(':')+1)}</div>`).join('');
 
-        // Page 1
+        // PAGE 1
         const page1Html = `
             <div class="page recto">
                 <div class="header">
@@ -321,43 +321,43 @@
                 <div class="section">
                     <h3>IDENTITÉ DU CLIENT</h3>
                     <table class="info-table">
-                        <tr><td style="width:35%"><strong>Nom / Raison sociale</strong></td><td>${nom}</td></tr>
-                        <tr><td><strong>CIN / ICE</strong></td><td>${cin}</td></tr>
-                        <tr><td><strong>Adresse</strong></td><td>${adresse}</td></tr>
-                        <tr><td><strong>Téléphone</strong></td><td>${telephone}</td></tr>
-                        <tr><td><strong>Permis n°</strong></td><td>${permis}</td></tr>
+                        <tr><td style="width:35%"><strong>Nom / Raison sociale</strong></td><td>${nom}</td> </tr>
+                        <tr><td><strong>CIN / ICE</strong></td><td>${cin}</td> </tr>
+                        <tr><td><strong>Adresse</strong></td><td>${adresse}</td> </tr>
+                        <tr><td><strong>Téléphone</strong></td><td>${telephone}</td> </tr>
+                        <tr><td><strong>Permis n°</strong></td><td>${permis}</td> </tr>
                     </table>
                     ${deuxieme ? `
                     <h3 style="margin-top:0.5rem;">DEUXIÈME CONDUCTEUR</h3>
                     <table class="info-table">
-                        <tr><td style="width:35%"><strong>Nom</strong></td><td>${deuxieme.nom || ""}</td></tr>
-                        <tr><td><strong>CIN</strong></td><td>${deuxieme.cin || ""}</td></tr>
-                        <tr><td><strong>Téléphone</strong></td><td>${deuxieme.telephone || ""}</td></tr>
-                        <tr><td><strong>Permis n°</strong></td><td>${deuxieme.permis || ""}</td></tr>
-                        <tr><td><strong>Adresse</strong></td><td>${deuxieme.adresse || ""}</td></tr>
+                        <tr><td style="width:35%"><strong>Nom</strong></td><td>${deuxieme.nom || ""}</td> </tr>
+                        <tr><td><strong>CIN</strong></td><td>${deuxieme.cin || ""}</td> </tr>
+                        <tr><td><strong>Téléphone</strong></td><td>${deuxieme.telephone || ""}</td> </tr>
+                        <tr><td><strong>Permis n°</strong></td><td>${deuxieme.permis || ""}</td> </tr>
+                        <tr><td><strong>Adresse</strong></td><td>${deuxieme.adresse || ""}</td> </tr>
                     </table>` : ''}
                 </div>
 
                 <div class="section">
                     <h3>VÉHICULE</h3>
                     <table class="info-table">
-                        <tr><td style="width:35%"><strong>Marque / Modèle</strong></td><td>${vehicule.marque} ${vehicule.modele}</td></tr>
-                        <tr><td><strong>Immatriculation</strong></td><td>${vehicule.immatriculation}</td></tr>
-                        <tr><td><strong>Carburant départ</strong></td><td>${contrat.niveauCarburant || "Plein"}</td></tr>
-                        <tr><td><strong>État livraison</strong></td><td>${contrat.etatLivraison || "Très bon état"}</td></tr>
-                        <tr><td><strong>Km départ</strong></td><td>${contrat.kmDepart || "---"}</td></tr>
+                        <tr><td style="width:35%"><strong>Marque / Modèle</strong></td><td>${vehicule.marque} ${vehicule.modele}</td> </tr>
+                        <tr><td><strong>Immatriculation</strong></td><td>${vehicule.immatriculation}</td> </tr>
+                        <tr><td><strong>Carburant départ</strong></td><td>${contrat.niveauCarburant || "Plein"}</td> </tr>
+                        <tr><td><strong>État livraison</strong></td><td>${contrat.etatLivraison || "Très bon état"}</td> </tr>
+                        <tr><td><strong>Km départ</strong></td><td>${contrat.kmDepart || "---"}</td> </tr>
                     </table>
                 </div>
 
                 <div class="section">
                     <h3>DÉTAILS DE LA LOCATION</h3>
                     <table class="details-table">
-                        <tr><td><strong>Date départ :</strong> ${debut.toLocaleDateString()}</td><td><strong>Date fin :</strong> ${fin.toLocaleDateString()}</td></tr>
-                        <tr><td><strong>Lieu départ :</strong> ${contrat.lieuDepart || "Rabat"}</td><td><strong>Lieu retour :</strong> ${contrat.lieuRetour || "Rabat"}</td></tr>
-                        <tr><td><strong>Nombre de jours :</strong> ${nbJours}</td><td><strong>Prix journalier (HT) :</strong> ${prixJournalier} DH</td></tr>
-                        <tr><td><strong>Montant HT :</strong> ${contrat.montant.toFixed(2)} DH</td><td><strong>TVA 20% :</strong> ${tva.toFixed(2)} DH</td></tr>
-                        <tr><td><strong>Total TTC :</strong> <strong>${totalTTC.toFixed(2)} DH</strong></td><td><strong>Avance / Caution :</strong> ${caution} DH</td></tr>
-                        <tr><td colspan="2"><strong>Reste à payer :</strong> ${(totalTTC - caution).toFixed(2)} DH</td></tr>
+                        <tr><td style="width:50%"><strong>Date départ :</strong> ${debut.toLocaleDateString()}</td><td><strong>Date fin :</strong> ${fin.toLocaleDateString()}</td> </tr>
+                        <tr><td><strong>Lieu départ :</strong> ${contrat.lieuDepart || "Rabat"}</td><td><strong>Lieu retour :</strong> ${contrat.lieuRetour || "Rabat"}</td> </tr>
+                        <tr><td><strong>Nombre de jours :</strong> ${nbJours}</td><td><strong>Prix journalier (HT) :</strong> ${prixJournalier} DH</td> </tr>
+                        <tr><td><strong>Montant HT :</strong> ${contrat.montant.toFixed(2)} DH</td><td><strong>TVA 20% :</strong> ${tva.toFixed(2)} DH</td> </tr>
+                        <tr><td><strong>Total TTC :</strong> <strong>${totalTTC.toFixed(2)} DH</strong></td><td><strong>Avance / Caution :</strong> ${caution} DH</td> </tr>
+                        <tr><td colspan="2"><strong>Reste à payer :</strong> ${(totalTTC - caution).toFixed(2)} DH</td> </tr>
                     </table>
                 </div>
 
@@ -369,7 +369,7 @@
             </div>
         `;
 
-        // Page 2 : articles avec police légèrement réduite encore
+        // PAGE 2 : articles avec police très légèrement réduite (6.3pt) et espacement entre articles réduit
         const page2Html = `
             <div class="page verso" style="page-break-before: always;">
                 <div class="header"><h2>CONDITIONS GÉNÉRALES DE LOCATION</h2></div>
@@ -397,9 +397,9 @@
             .details-table td { padding:0.15rem; border-bottom:1px solid #ddd; font-size:9pt; }
             .signatures { margin-top:0.8rem; display:flex; justify-content:space-between; font-size:9pt; }
             .sign-line { border-bottom:1px solid black; display:inline-block; width:150px; margin-left:6px; }
-            .footer { text-align:center; margin-top:0.5rem; font-size:6.5pt; border-top:1px solid #ccc; padding-top:0.2rem; }
-            .articles-list { font-size:6.5pt; line-height:1.08; text-align:justify; margin:0.3rem 0; }
-            .articles-list > div { margin-bottom:0.2rem; break-inside:avoid; }
+            .footer { text-align:center; margin-top:0.4rem; font-size:6.5pt; border-top:1px solid #ccc; padding-top:0.2rem; }
+            .articles-list { font-size:6.3pt; line-height:1.08; text-align:justify; margin:0.3rem 0; }
+            .articles-list > div { margin-bottom:0.18rem; break-inside:avoid; }
             @media print { .page { padding:1.2cm; } }
         </style>
         </head>
@@ -428,4 +428,4 @@
     document.getElementById('logoutBtn').onclick = () => signOut(auth);
 </script>
 </body>
-    </html>
+                                               </html>
