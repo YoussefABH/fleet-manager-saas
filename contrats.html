@@ -141,7 +141,6 @@
 
     openBtn.onclick = () => {
         if (vehiculesList.length === 0) { alert("Ajoutez d'abord un véhicule."); return; }
-        // Reset fields
         const fields = ['contratVehiculeId','conducteurCin','conducteurNom','conducteurTel','conducteurEmail','conducteurAdresse','conducteurPermis','societeRaison','societeICE','societeIF','societeRC','societeAdresse','societeEmail','societeTel','societeContact','deuxiemeNom','deuxiemeCin','deuxiemeTel','deuxiemePermis','deuxiemeAdresse','contratDebut','contratFin','contratMontant','contratAvance','lieuDepart','lieuRetour','kmDepart','kmRetour','etatRetour'];
         fields.forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
         document.getElementById('contratAvance').value = '0';
@@ -249,7 +248,7 @@
         document.querySelectorAll('.downloadPdf').forEach(btn => btn.onclick = () => genererPDFContrat(btn.dataset.id));
     }
 
-    // ========== GÉNÉRATION PDF 2 PAGES, POLICE RÉDUITE, ARTICLES COMPLETS ==========
+    // ========== GÉNÉRATION PDF 2 PAGES AVEC STYLE PROPRE ==========
     async function genererPDFContrat(contratId) {
         const contratDoc = await getDoc(doc(db, "contrats", contratId));
         if (!contratDoc.exists()) { alert("Contrat introuvable"); return; }
@@ -266,7 +265,7 @@
         const tva = contrat.montant * 0.2;
         const totalTTC = contrat.montant + tva;
         const caution = contrat.avance || 0;
-        const kmDepart = contrat.kmDepart || "_____";
+        const kmDepart = contrat.kmDepart || "---";
         
         let nom = "", cin = "", permis = "", telephone = "", adresse = "";
         if (client.type === 'particulier') {
@@ -283,33 +282,33 @@
             adresse = client.adresse;
         }
         
-        // Articles complets
+        // Articles complets (comme dans votre bon PDF)
         const articles = [
-            {titre:"ARTICLE 1 – OBJET DU CONTRAT", texte:"Le présent contrat a pour objet la location d’un véhicule par la société ABDERCAR, ci-après dénommée « le Loueur », au profit du client, ci-après dénommé « le Locataire ». La location est strictement personnelle, temporaire et non transmissible."},
-            {titre:"ARTICLE 2 – FORMATION DU CONTRAT", texte:"Le contrat est formé dès signature par les parties et remise du véhicule. 👉 La signature vaut : acceptation sans réserve, reconnaissance de l’état du véhicule, engagement à respecter toutes les clauses."},
-            {titre:"ARTICLE 3 – CONDUCTEURS AUTORISÉS", texte:`Seuls les conducteurs mentionnés au contrat sont autorisés à conduire le véhicule. Le locataire reste pleinement responsable, même si un tiers conduit. ❗ Toute conduite non autorisée entraîne : exclusion d’assurance, responsabilité totale du locataire. Conducteur principal : ${nom} (permis ${permis}).${deuxieme ? `\nDeuxième conducteur : ${deuxieme.nom} (permis ${deuxieme.permis || "non renseigné"})` : ""}`},
-            {titre:"ARTICLE 4 – UTILISATION DU VÉHICULE", texte:"Le locataire s’engage à utiliser le véhicule conformément à sa destination. Il est strictement interdit : d’utiliser le véhicule à des fins illégales, de transporter des passagers à titre onéreux, de participer à des courses ou essais, de circuler hors routes carrossables, de sortir le véhicule du territoire marocain, de sous-louer ou céder le véhicule. 👉 En cas de violation : résiliation immédiate + poursuites possibles."},
-            {titre:"ARTICLE 5 – ÉTAT DU VÉHICULE", texte:`Le véhicule est remis en bon état apparent et de fonctionnement. La fiche état + photos font foi juridiquement. 👉 Toute absence de réserve = acceptation définitive. Le locataire doit restituer le véhicule dans le même état (hors usure normale). Kilométrage départ : ${kmDepart} km.`},
-            {titre:"ARTICLE 6 – ENTRETIEN ET UTILISATION TECHNIQUE", texte:"Le locataire doit : vérifier huile, eau, pression pneus, utiliser carburant adapté, respecter les alertes du véhicule. 👉 Toute négligence engage sa responsabilité totale."},
-            {titre:"ARTICLE 7 – DURÉE – PROLONGATION", texte:`La location est conclue pour une durée déterminée du ${debut.toLocaleDateString()} au ${fin.toLocaleDateString()}. Toute prolongation nécessite accord écrit et doit être payée à l’avance. 👉 À défaut : abus de confiance (poursuites pénales possibles).`},
-            {titre:"ARTICLE 8 – RESTITUTION DU VÉHICULE", texte:`Le véhicule doit être restitué à la date prévue (${fin.toLocaleDateString()}), au lieu convenu, avec le même niveau de carburant, dans le même état. 👉 Toute journée commencée est due. 👉 Tout retard = facturation + indemnité.`},
-            {titre:"ARTICLE 9 – CLAUSE ESSENTIELLE (DROITS DU LOUEUR)", texte:"La restitution du véhicule ne constitue ni quitus, ni règlement, ni renonciation aux droits du Loueur. Le locataire reste redevable de : dommages constatés après restitution, franchise assurance, frais cachés ou différés, amendes reçues ultérieurement. 👉 ABDERCAR conserve un droit de poursuite TOTAL même après restitution."},
-            {titre:"ARTICLE 10 – DÉPÔT DE GARANTIE", texte:`Un dépôt de garantie d’un montant de ${caution} MAD est exigé. Il sert à couvrir : dommages, franchise, retards, frais divers. Le loueur peut : 👉 retenir partiellement ou totalement la caution, sans autorisation préalable du locataire.`},
-            {titre:"ARTICLE 11 – ASSURANCE", texte:"Le véhicule est assuré conformément à la loi marocaine. ❗ Restent à la charge du locataire : franchise, dommages non couverts, faute grave. ❗ Exclusions : alcool / drogue, conducteur non autorisé, absence de permis, négligence."},
-            {titre:"ARTICLE 12 – ACCIDENT / SINISTRE", texte:"Le locataire doit prévenir immédiatement le loueur, déclarer aux autorités, fournir constat. ❗ Interdiction : reconnaître sa responsabilité, négocier avec tiers."},
-            {titre:"ARTICLE 13 – PANNES ET IMMOBILISATION", texte:"Panne normale → loueur. Mauvaise utilisation → locataire. 👉 Immobilisation imputable au locataire : facturation journalière complète."},
-            {titre:"ARTICLE 14 – AMENDES ET INFRACTIONS", texte:"Le locataire est seul responsable de : amendes, PV, infractions. 👉 Le loueur peut : payer et refacturer, ou transmettre aux autorités."},
-            {titre:"ARTICLE 15 – NETTOYAGE", texte:"Le véhicule doit être rendu propre. 👉 Nettoyage exceptionnel facturé."},
-            {titre:"ARTICLE 16 – PREUVE", texte:"Font foi : contrat signé, fiche état, photos, messages (WhatsApp, email). Preuve électronique reconnue."},
-            {titre:"ARTICLE 17 – DETTE ET RECOUVREMENT", texte:"Toute somme due est certaine, liquide et exigible. En cas de non-paiement : mise en demeure, pénalité 20 %, poursuites judiciaires."},
-            {titre:"ARTICLE 18 – RÉSILIATION", texte:"Le loueur peut résilier immédiatement en cas de non-respect, danger ou fraude."},
-            {titre:"ARTICLE 19 – FORCE MAJEURE", texte:"Le loueur n’est pas responsable en cas de catastrophe, blocage administratif, événement imprévisible."},
-            {titre:"ARTICLE 20 – JURIDICTION", texte:"Tout litige relève des tribunaux de Rabat – Salé – Témara."},
-            {titre:"ARTICLE 21 – ACCEPTATION", texte:"La signature vaut acceptation totale et engagement irrévocable."}
+            "ARTICLE 1 – OBJET DU CONTRAT : Le présent contrat a pour objet la location d’un véhicule par la société ABDERCAR, ci-après dénommée « le Loueur », au profit du client, ci-après dénommé « le Locataire ». La location est strictement personnelle, temporaire et non transmissible.",
+            "ARTICLE 2 – FORMATION DU CONTRAT : Le contrat est formé dès signature par les parties et remise du véhicule. La signature vaut : acceptation sans réserve, reconnaissance de l’état du véhicule, engagement à respecter toutes les clauses.",
+            `ARTICLE 3 – CONDUCTEURS AUTORISÉS : Seuls les conducteurs mentionnés au contrat sont autorisés à conduire le véhicule. Le locataire reste pleinement responsable, même si un tiers conduit. Toute conduite non autorisée entraîne : exclusion d’assurance, responsabilité totale du locataire. Conducteur principal : ${nom} (permis ${permis}).${deuxieme ? ` Deuxième conducteur : ${deuxieme.nom} (permis ${deuxieme.permis || "non renseigné"}).` : ""}`,
+            "ARTICLE 4 – UTILISATION DU VÉHICULE : Le locataire s’engage à utiliser le véhicule conformément à sa destination. Il est strictement interdit : d’utiliser le véhicule à des fins illégales, de transporter des passagers à titre onéreux, de participer à des courses ou essais, de circuler hors routes carrossables, de sortir le véhicule du territoire marocain, de sous-louer ou céder le véhicule. En cas de violation : résiliation immédiate + poursuites possibles.",
+            `ARTICLE 5 – ÉTAT DU VÉHICULE : Le véhicule est remis en bon état apparent et de fonctionnement. La fiche état + photos font foi juridiquement. Toute absence de réserve = acceptation définitive. Le locataire doit restituer le véhicule dans le même état (hors usure normale). Kilométrage départ : ${kmDepart} km.`,
+            "ARTICLE 6 – ENTRETIEN ET UTILISATION TECHNIQUE : Le locataire doit : vérifier huile, eau, pression pneus, utiliser carburant adapté, respecter les alertes du véhicule. Toute négligence engage sa responsabilité totale.",
+            `ARTICLE 7 – DURÉE – PROLONGATION : La location est conclue pour une durée déterminée du ${debut.toLocaleDateString()} au ${fin.toLocaleDateString()}. Toute prolongation nécessite accord écrit et doit être payée à l’avance. À défaut : abus de confiance (poursuites pénales possibles).`,
+            `ARTICLE 8 – RESTITUTION DU VÉHICULE : Le véhicule doit être restitué à la date prévue (${fin.toLocaleDateString()}), au lieu convenu, avec le même niveau de carburant, dans le même état. Toute journée commencée est due. Tout retard = facturation + indemnité.`,
+            "ARTICLE 9 – CLAUSE ESSENTIELLE (DROITS DU LOUEUR) : La restitution du véhicule ne constitue ni quitus, ni règlement, ni renonciation aux droits du Loueur. Le locataire reste redevable de : dommages constatés après restitution, franchise assurance, frais cachés ou différés, amendes reçues ultérieurement. ABDERCAR conserve un droit de poursuite TOTAL même après restitution.",
+            `ARTICLE 10 – DÉPÔT DE GARANTIE : Un dépôt de garantie d’un montant de ${caution} MAD est exigé. Il sert à couvrir : dommages, franchise, retards, frais divers. Le loueur peut retenir partiellement ou totalement la caution, sans autorisation préalable du locataire.`,
+            "ARTICLE 11 – ASSURANCE : Le véhicule est assuré conformément à la loi marocaine. Restent à la charge du locataire : franchise, dommages non couverts, faute grave. Exclusions : alcool / drogue, conducteur non autorisé, absence de permis, négligence.",
+            "ARTICLE 12 – ACCIDENT / SINISTRE : Le locataire doit prévenir immédiatement le loueur, déclarer aux autorités, fournir constat. Interdiction : reconnaître sa responsabilité, négocier avec tiers.",
+            "ARTICLE 13 – PANNES ET IMMOBILISATION : Panne normale → loueur. Mauvaise utilisation → locataire. Immobilisation imputable au locataire : facturation journalière complète.",
+            "ARTICLE 14 – AMENDES ET INFRACTIONS : Le locataire est seul responsable de : amendes, PV, infractions. Le loueur peut payer et refacturer, ou transmettre aux autorités.",
+            "ARTICLE 15 – NETTOYAGE : Le véhicule doit être rendu propre. Nettoyage exceptionnel facturé.",
+            "ARTICLE 16 – PREUVE : Font foi : contrat signé, fiche état, photos, messages (WhatsApp, email). Preuve électronique reconnue.",
+            "ARTICLE 17 – DETTE ET RECOUVREMENT : Toute somme due est certaine, liquide et exigible. En cas de non-paiement : mise en demeure, pénalité 20 %, poursuites judiciaires.",
+            "ARTICLE 18 – RÉSILIATION : Le loueur peut résilier immédiatement en cas de non-respect, danger ou fraude.",
+            "ARTICLE 19 – FORCE MAJEURE : Le loueur n’est pas responsable en cas de catastrophe, blocage administratif, événement imprévisible.",
+            "ARTICLE 20 – JURIDICTION : Tout litige relève des tribunaux de Rabat – Salé – Témara.",
+            "ARTICLE 21 – ACCEPTATION : La signature vaut acceptation totale et engagement irrévocable."
         ];
-        const articlesHtml = articles.map(art => `<div><strong>${art.titre}</strong><br>${art.texte}</div>`).join('');
+        const articlesHtml = articles.map(a => `<div><strong>${a.substring(0, a.indexOf(':'))}</strong>${a.substring(a.indexOf(':')+1)}</div>`).join('');
 
-        // Page 1 avec style en tableaux
+        // PAGE 1 : identité, véhicule, détails, signatures
         const page1Html = `
             <div class="page recto">
                 <div class="header">
@@ -322,7 +321,7 @@
                 <div class="section">
                     <h3>IDENTITÉ DU CLIENT</h3>
                     <table class="info-table">
-                        <tr><td style="width:30%"><strong>Nom / Raison sociale</strong></td><td>${nom}</td></tr>
+                        <tr><td style="width:35%"><strong>Nom / Raison sociale</strong></td><td>${nom}</td></tr>
                         <tr><td><strong>CIN / ICE</strong></td><td>${cin}</td></tr>
                         <tr><td><strong>Adresse</strong></td><td>${adresse}</td></tr>
                         <tr><td><strong>Téléphone</strong></td><td>${telephone}</td></tr>
@@ -331,7 +330,7 @@
                     ${deuxieme ? `
                     <h3 style="margin-top:0.5rem;">DEUXIÈME CONDUCTEUR</h3>
                     <table class="info-table">
-                        <tr><td style="width:30%"><strong>Nom</strong></td><td>${deuxieme.nom || ""}</td></tr>
+                        <tr><td style="width:35%"><strong>Nom</strong></td><td>${deuxieme.nom || ""}</td></tr>
                         <tr><td><strong>CIN</strong></td><td>${deuxieme.cin || ""}</td></tr>
                         <tr><td><strong>Téléphone</strong></td><td>${deuxieme.telephone || ""}</td></tr>
                         <tr><td><strong>Permis n°</strong></td><td>${deuxieme.permis || ""}</td></tr>
@@ -342,7 +341,7 @@
                 <div class="section">
                     <h3>VÉHICULE</h3>
                     <table class="info-table">
-                        <tr><td style="width:30%"><strong>Marque / Modèle</strong></td><td>${vehicule.marque} ${vehicule.modele}</td></tr>
+                        <tr><td style="width:35%"><strong>Marque / Modèle</strong></td><td>${vehicule.marque} ${vehicule.modele}</td></tr>
                         <tr><td><strong>Immatriculation</strong></td><td>${vehicule.immatriculation}</td></tr>
                         <tr><td><strong>Carburant départ</strong></td><td>${contrat.niveauCarburant || "Plein"}</td></tr>
                         <tr><td><strong>État livraison</strong></td><td>${contrat.etatLivraison || "Très bon état"}</td></tr>
@@ -370,10 +369,11 @@
             </div>
         `;
 
+        // PAGE 2 : conditions générales (police très réduite pour tenir sur une page)
         const page2Html = `
             <div class="page verso" style="page-break-before: always;">
                 <div class="header"><h2>CONDITIONS GÉNÉRALES DE LOCATION</h2></div>
-                <div class="articles-columns">${articlesHtml}</div>
+                <div class="articles-list">${articlesHtml}</div>
                 <div class="footer">Le locataire reconnaît avoir pris connaissance et accepté les présentes conditions.</div>
             </div>
         `;
@@ -383,24 +383,24 @@
         <head><meta charset="UTF-8"><title>Contrat ABDERCAR</title>
         <style>
             * { margin:0; padding:0; box-sizing:border-box; }
-            body { background:white; font-family:'Times New Roman', Times, serif; font-size:9pt; line-height:1.2; }
-            .page { width:100%; padding:1.5cm; position:relative; page-break-after:always; }
+            body { background:white; font-family:'Times New Roman', Times, serif; font-size:10pt; line-height:1.2; }
+            .page { width:100%; padding:1.2cm; position:relative; page-break-after:always; }
             .header { text-align:center; margin-bottom:0.8rem; border-bottom:1px solid #aaa; padding-bottom:0.3rem; }
-            .header h1 { font-size:18pt; margin-bottom:2px; }
-            .header h2 { font-size:14pt; }
-            .title { font-size:14pt; font-weight:bold; text-align:center; margin:0.5rem 0; }
+            .header h1 { font-size:16pt; margin-bottom:2px; }
+            .header h2 { font-size:13pt; }
+            .title { font-size:13pt; font-weight:bold; text-align:center; margin:0.5rem 0; }
             .section { margin:0.6rem 0; }
             .section h3 { background:#1a3a6c; color:white; padding:4px; font-size:10pt; border-radius:4px; }
             .info-table { width:100%; border-collapse:collapse; }
             .info-table td { padding:0.2rem; border-bottom:1px solid #ddd; }
             .details-table { width:100%; border-collapse:collapse; margin-top:0.3rem; }
             .details-table td { padding:0.2rem; border-bottom:1px solid #ddd; }
-            .signatures { margin-top:1rem; display:flex; justify-content:space-between; }
+            .signatures { margin-top:1.2rem; display:flex; justify-content:space-between; }
             .sign-line { border-bottom:1px solid black; display:inline-block; width:180px; margin-left:8px; }
-            .footer { text-align:center; margin-top:1rem; font-size:7.5pt; border-top:1px solid #ccc; padding-top:0.3rem; }
-            .articles-columns { column-count:2; column-gap:1.5rem; text-align:justify; margin:0.5rem 0; }
-            .articles-columns > div { margin-bottom:0.5rem; break-inside:avoid; }
-            @media print { .page { padding:1.5cm; } }
+            .footer { text-align:center; margin-top:0.8rem; font-size:7pt; border-top:1px solid #ccc; padding-top:0.3rem; }
+            .articles-list { font-size:7.5pt; line-height:1.15; text-align:justify; margin:0.5rem 0; }
+            .articles-list > div { margin-bottom:0.3rem; break-inside:avoid; }
+            @media print { .page { padding:1.2cm; } }
         </style>
         </head>
         <body>
