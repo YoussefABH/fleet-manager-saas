@@ -39,7 +39,7 @@
     </div>
 </div>
 
-<!-- MODAL CONTRAT (identique à la version précédente) -->
+<!-- MODAL CONTRAT (identique à la version validée) -->
 <div id="contratModal" style="display: none; position: fixed; inset:0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; overflow-y: auto; padding: 20px;">
     <div style="background: white; max-width: 800px; width: 100%; border-radius: 20px; padding: 1.5rem; margin: auto;">
         <h3 class="mb-3">Nouveau contrat</h3>
@@ -120,7 +120,7 @@
     let currentUser = null;
     let vehiculesList = [];
 
-    // Gestion du modal (identique à la version précédente, non modifiée)
+    // Gestion du modal (identique à la version précédente)
     const modal = document.getElementById('contratModal');
     const openBtn = document.getElementById('openContratModalBtn');
     const closeBtn = document.getElementById('closeContratModal');
@@ -248,7 +248,7 @@
         document.querySelectorAll('.downloadPdf').forEach(btn => btn.onclick = () => genererPDFContrat(btn.dataset.id));
     }
 
-    // ========== GÉNÉRATION PDF 2 PAGES AVEC STYLE PROPRE ==========
+    // ========== GÉNÉRATION PDF : PAGE 1 = IDENTITÉ + DÉTAILS, PAGE 2 = ARTICLES (POLICE TRÈS PETITE) ==========
     async function genererPDFContrat(contratId) {
         const contratDoc = await getDoc(doc(db, "contrats", contratId));
         if (!contratDoc.exists()) { alert("Contrat introuvable"); return; }
@@ -282,7 +282,7 @@
             adresse = client.adresse;
         }
         
-        // Articles complets (comme dans votre bon PDF)
+        // Articles complets (version courte mais complète)
         const articles = [
             "ARTICLE 1 – OBJET DU CONTRAT : Le présent contrat a pour objet la location d’un véhicule par la société ABDERCAR, ci-après dénommée « le Loueur », au profit du client, ci-après dénommé « le Locataire ». La location est strictement personnelle, temporaire et non transmissible.",
             "ARTICLE 2 – FORMATION DU CONTRAT : Le contrat est formé dès signature par les parties et remise du véhicule. La signature vaut : acceptation sans réserve, reconnaissance de l’état du véhicule, engagement à respecter toutes les clauses.",
@@ -308,7 +308,7 @@
         ];
         const articlesHtml = articles.map(a => `<div><strong>${a.substring(0, a.indexOf(':'))}</strong>${a.substring(a.indexOf(':')+1)}</div>`).join('');
 
-        // PAGE 1 : identité, véhicule, détails, signatures
+        // PAGE 1
         const page1Html = `
             <div class="page recto">
                 <div class="header">
@@ -369,7 +369,7 @@
             </div>
         `;
 
-        // PAGE 2 : conditions générales (police très réduite pour tenir sur une page)
+        // PAGE 2 : articles en très petite police pour tenir sur une page
         const page2Html = `
             <div class="page verso" style="page-break-before: always;">
                 <div class="header"><h2>CONDITIONS GÉNÉRALES DE LOCATION</h2></div>
@@ -385,21 +385,21 @@
             * { margin:0; padding:0; box-sizing:border-box; }
             body { background:white; font-family:'Times New Roman', Times, serif; font-size:10pt; line-height:1.2; }
             .page { width:100%; padding:1.2cm; position:relative; page-break-after:always; }
-            .header { text-align:center; margin-bottom:0.8rem; border-bottom:1px solid #aaa; padding-bottom:0.3rem; }
-            .header h1 { font-size:16pt; margin-bottom:2px; }
-            .header h2 { font-size:13pt; }
-            .title { font-size:13pt; font-weight:bold; text-align:center; margin:0.5rem 0; }
-            .section { margin:0.6rem 0; }
-            .section h3 { background:#1a3a6c; color:white; padding:4px; font-size:10pt; border-radius:4px; }
+            .header { text-align:center; margin-bottom:0.6rem; border-bottom:1px solid #aaa; padding-bottom:0.2rem; }
+            .header h1 { font-size:15pt; margin-bottom:2px; }
+            .header h2 { font-size:12pt; }
+            .title { font-size:12pt; font-weight:bold; text-align:center; margin:0.4rem 0; }
+            .section { margin:0.5rem 0; }
+            .section h3 { background:#1a3a6c; color:white; padding:3px; font-size:9pt; border-radius:4px; }
             .info-table { width:100%; border-collapse:collapse; }
-            .info-table td { padding:0.2rem; border-bottom:1px solid #ddd; }
-            .details-table { width:100%; border-collapse:collapse; margin-top:0.3rem; }
-            .details-table td { padding:0.2rem; border-bottom:1px solid #ddd; }
-            .signatures { margin-top:1.2rem; display:flex; justify-content:space-between; }
-            .sign-line { border-bottom:1px solid black; display:inline-block; width:180px; margin-left:8px; }
-            .footer { text-align:center; margin-top:0.8rem; font-size:7pt; border-top:1px solid #ccc; padding-top:0.3rem; }
-            .articles-list { font-size:7.5pt; line-height:1.15; text-align:justify; margin:0.5rem 0; }
-            .articles-list > div { margin-bottom:0.3rem; break-inside:avoid; }
+            .info-table td { padding:0.15rem; border-bottom:1px solid #ddd; font-size:9pt; }
+            .details-table { width:100%; border-collapse:collapse; margin-top:0.2rem; }
+            .details-table td { padding:0.15rem; border-bottom:1px solid #ddd; font-size:9pt; }
+            .signatures { margin-top:1rem; display:flex; justify-content:space-between; font-size:9pt; }
+            .sign-line { border-bottom:1px solid black; display:inline-block; width:160px; margin-left:6px; }
+            .footer { text-align:center; margin-top:0.6rem; font-size:6.5pt; border-top:1px solid #ccc; padding-top:0.2rem; }
+            .articles-list { font-size:6.8pt; line-height:1.1; text-align:justify; margin:0.4rem 0; }
+            .articles-list > div { margin-bottom:0.2rem; break-inside:avoid; }
             @media print { .page { padding:1.2cm; } }
         </style>
         </head>
